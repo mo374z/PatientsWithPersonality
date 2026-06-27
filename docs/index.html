@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Patients With Personality</title>
+  <meta name="description" content="Realistic Patient Simulation through Controlled Diversity and Selective Disclosure.">
+  <meta property="og:title" content="Patients With Personality">
+  <meta property="og:description" content="Realistic Patient Simulation through Controlled Diversity and Selective Disclosure.">
+  <meta property="og:image" content="static/images/realism_subscores.png">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Newsreader:ital,opsz@0,6..72;1,6..72&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <style>
+    :root {
+      --bg: #fbfbfa;
+      --fg: #1a1a1a;
+      --muted: #5b5b5b;
+      --accent: #1f9e87;
+      --accent-dark: #167a68;
+      --border: #e7e7e4;
+      --card: #ffffff;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--fg);
+      background: var(--bg);
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+    .container { max-width: 880px; margin: 0 auto; padding: 0 24px; }
+
+    header.hero {
+      text-align: center;
+      padding: 72px 24px 40px;
+      border-bottom: 1px solid var(--border);
+      background:
+        radial-gradient(1200px 400px at 50% -120px, rgba(31,158,135,0.10), transparent 70%);
+    }
+    .eyebrow {
+      display: inline-block;
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent-dark);
+      font-weight: 600;
+      margin-bottom: 18px;
+    }
+    h1.title {
+      font-family: 'Newsreader', Georgia, serif;
+      font-size: clamp(2.1rem, 5vw, 3.2rem);
+      line-height: 1.1;
+      margin: 0 0 10px;
+      font-weight: 600;
+    }
+    .subtitle {
+      font-size: clamp(1.05rem, 2.3vw, 1.35rem);
+      color: var(--muted);
+      max-width: 720px;
+      margin: 0 auto 28px;
+      font-weight: 400;
+    }
+    .authors {
+      font-size: 1.02rem;
+      max-width: 760px;
+      margin: 0 auto 6px;
+      color: var(--fg);
+    }
+    .authors a { color: var(--accent-dark); text-decoration: none; font-weight: 500; }
+    .authors a:hover { text-decoration: underline; }
+    .venue { color: var(--muted); font-size: 0.95rem; margin-bottom: 26px; }
+
+    .buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 20px; border-radius: 999px;
+      font-size: 0.95rem; font-weight: 600; text-decoration: none;
+      background: #1a1a1a; color: #fff;
+      transition: transform 0.12s ease, background 0.12s ease;
+      border: 1px solid #1a1a1a;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn.alt { background: #fff; color: #1a1a1a; }
+    .btn.alt:hover { border-color: var(--accent); color: var(--accent-dark); }
+    .btn.accent { background: var(--accent); border-color: var(--accent); }
+    .btn.accent:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+
+    section { padding: 56px 0; border-bottom: 1px solid var(--border); }
+    section:last-of-type { border-bottom: none; }
+    h2 {
+      font-family: 'Newsreader', Georgia, serif;
+      font-weight: 600;
+      font-size: 1.9rem;
+      text-align: center;
+      margin: 0 0 28px;
+    }
+    .abstract {
+      font-size: 1.08rem;
+      color: #2b2b2b;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+    .abstract p { margin: 0; }
+
+    .teaser { padding-top: 40px; }
+    figure { margin: 0; }
+    figure img {
+      width: 100%; height: auto; display: block;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: #fff;
+      padding: 14px;
+    }
+    figcaption {
+      text-align: center; color: var(--muted);
+      font-size: 0.92rem; margin-top: 12px;
+      max-width: 760px; margin-left: auto; margin-right: auto;
+    }
+    figcaption b { color: var(--fg); }
+
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+    @media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } }
+
+    .highlights { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    @media (max-width: 720px) { .highlights { grid-template-columns: 1fr; } }
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 22px;
+    }
+    .card .ico {
+      width: 40px; height: 40px; border-radius: 10px;
+      display: grid; place-items: center; font-size: 18px;
+      background: rgba(31,158,135,0.12); color: var(--accent-dark);
+      margin-bottom: 12px;
+    }
+    .card h3 { margin: 0 0 6px; font-size: 1.05rem; }
+    .card p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+
+    .hexaco { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    @media (max-width: 720px) { .hexaco { grid-template-columns: 1fr; } }
+    .trait {
+      border: 1px solid var(--border); border-radius: 12px; padding: 16px;
+      background: #fff;
+    }
+    .trait .letter {
+      font-family: 'Newsreader', serif; font-size: 1.6rem; font-weight: 600;
+      color: var(--accent-dark); line-height: 1;
+    }
+    .trait .name { font-weight: 600; font-size: 0.95rem; margin: 6px 0 4px; }
+    .trait .desc { color: var(--muted); font-size: 0.88rem; }
+
+    pre {
+      background: #1c1d22; color: #e6e6e6; border-radius: 12px;
+      padding: 20px; overflow-x: auto; font-size: 0.86rem;
+      line-height: 1.5; margin: 0;
+    }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+    footer { text-align: center; padding: 40px 24px; color: var(--muted); font-size: 0.9rem; }
+    footer a { color: var(--accent-dark); text-decoration: none; }
+  </style>
+</head>
+<body>
+
+  <header class="hero">
+    <div class="container">
+      <span class="eyebrow">Realistic &amp; Steerable Patient Simulation</span>
+      <h1 class="title">Patients With Personality</h1>
+      <p class="subtitle">Realistic Patient Simulation through Controlled Diversity and Selective Disclosure</p>
+
+      <p class="authors">
+        <a href="https://github.com/mo374z">Moritz Schlager</a>, Friederike Jungmann, Samuel Schmidgall,
+        Philipp Raffler, Franziska Hartl, Eva Wende, Paula Roßmüller, Conrad Ketzer,
+        Avinatan Hassidim, Dale R. Webster, Yossi Matias, Yun Liu, Daniel Rueckert,
+        Mike Schaekermann, Paul Hager
+      </p>
+      <p class="venue">arXiv preprint, 2026</p>
+
+      <div class="buttons">
+        <a class="btn" href="https://arxiv.org/abs/2606.17441"><i class="fas fa-file-lines"></i> Paper</a>
+        <a class="btn alt" href="https://arxiv.org/pdf/2606.17441"><i class="fas fa-file-pdf"></i> PDF</a>
+        <a class="btn accent" href="https://github.com/mo374z/PatientsWithPersonality"><i class="fab fa-github"></i> Code</a>
+        <a class="btn alt" href="#bibtex"><i class="fas fa-quote-right"></i> BibTeX</a>
+      </div>
+    </div>
+  </header>
+
+  <section class="teaser" style="border-bottom:none;">
+    <div class="container">
+      <figure>
+        <img src="static/images/realism_subscores.png" alt="Clinician realism evaluation">
+        <figcaption><b>Clinician evaluation.</b> PWP (green) is judged nearly as realistic as recorded human actors across symptom realism, information control, and style — and clearly ahead of prior simulators.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <h2>Abstract</h2>
+      <div class="abstract">
+        <p>
+          Simulating realistic patient interactions is a key requirement to testing clinical applications of LLMs at scale
+          without time-consuming and expensive user studies. However, existing approaches often lack realism and
+          controllability, often oversharing information unprompted, and failing to capture the wide variability of patient
+          behavior. Here, we introduce <b>PatientsWithPersonality (PWP)</b>, a patient simulation framework that generates
+          realistic yet diverse virtual patient responses through explicit personality parametrization over a latent patient
+          state. Grounded in <b>HEXACO</b>, a six-dimensional personality space used to quantify and parameterize human
+          behavioral traits, our approach enables fine-grained control over conversational style, cooperativeness, and
+          information disclosure within a unified framework. In a clinician evaluation, PWP is judged nearly as realistic as
+          recorded human actors and clearly ahead of prior simulators, while being flagged as &ldquo;too informative&rdquo;
+          far less often. Conditioning on HEXACO axes yields personas whose configured traits are recoverable by both
+          clinicians and an autorater, span a substantially wider behavioral footprint than the closest baseline, and prevent
+          oversharing. Altogether, our framework paves the way for more accurate and informative LLM benchmarking through our
+          realistic and steerable patient simulator.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <h2>Highlights</h2>
+      <div class="highlights">
+        <div class="card">
+          <div class="ico"><i class="fas fa-dna"></i></div>
+          <h3>HEXACO-grounded personas</h3>
+          <p>Six personality axes give fine-grained, recoverable control over how a patient behaves.</p>
+        </div>
+        <div class="card">
+          <div class="ico"><i class="fas fa-comment-slash"></i></div>
+          <h3>Selective disclosure</h3>
+          <p>Patients reveal information only when prompted, preventing the unprompted oversharing of prior simulators.</p>
+        </div>
+        <div class="card">
+          <div class="ico"><i class="fas fa-arrows-left-right-to-line"></i></div>
+          <h3>Controlled diversity</h3>
+          <p>Configured traits span a substantially wider behavioral footprint than the closest baseline.</p>
+        </div>
+        <div class="card">
+          <div class="ico"><i class="fas fa-user-doctor"></i></div>
+          <h3>Clinician-validated</h3>
+          <p>Judged nearly as realistic as recorded human actors in a blinded clinician study.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <h2>The HEXACO Personality Space</h2>
+      <div class="hexaco">
+        <div class="trait"><div class="letter">H</div><div class="name">Honesty-Humility</div><div class="desc">Truthful, downplayed, or denied disclosure of sensitive habits.</div></div>
+        <div class="trait"><div class="letter">E</div><div class="name">Emotionality</div><div class="desc">Emotional state driving demeanor across the conversation.</div></div>
+        <div class="trait"><div class="letter">X</div><div class="name">Extraversion</div><div class="desc">Talkativeness and tendency toward conversational tangents.</div></div>
+        <div class="trait"><div class="letter">A</div><div class="name">Agreeableness</div><div class="desc">Cooperativeness with the interviewing clinician.</div></div>
+        <div class="trait"><div class="letter">C</div><div class="name">Conscientiousness</div><div class="desc">Precision of medical-history recall (exact → vague).</div></div>
+        <div class="trait"><div class="letter">O</div><div class="name">Openness</div><div class="desc">Prior beliefs and flexibility of thinking.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <h2>Results</h2>
+      <div class="grid2">
+        <figure>
+          <img src="static/images/disclosure_curve.png" alt="Disclosure curve">
+          <figcaption><b>Selective disclosure.</b> PWP discloses fewer fields per turn, closely tracking real humans while baselines overshare.</figcaption>
+        </figure>
+        <figure>
+          <img src="static/images/personality_info_handling.png" alt="Personality-conditioned information handling">
+          <figcaption><b>Steerable behavior.</b> Conditioning on HEXACO axes measurably changes information handling per persona.</figcaption>
+        </figure>
+      </div>
+      <figure style="margin-top:32px;">
+        <img src="static/images/benchmark_performance.png" alt="Downstream benchmark performance">
+        <figcaption><b>Downstream benchmarking.</b> Diagnostic accuracy when an LLM doctor interviews each simulator across backends.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section id="bibtex">
+    <div class="container">
+      <h2>BibTeX</h2>
+      <pre><code>@article{schlager2026patients,
+  title   = {Patients With Personality: Realistic Patient Simulation
+             through Controlled Diversity and Selective Disclosure},
+  author  = {Schlager, Moritz and Jungmann, Friederike and Schmidgall, Samuel
+             and Raffler, Philipp and Hartl, Franziska and Wende, Eva
+             and Ro{\ss}m{\"u}ller, Paula and Ketzer, Conrad and Hassidim, Avinatan
+             and Webster, Dale R. and Matias, Yossi and Liu, Yun
+             and Rueckert, Daniel and Schaekermann, Mike and Hager, Paul},
+  journal = {arXiv preprint arXiv:2606.17441},
+  year    = {2026}
+}</code></pre>
+    </div>
+  </section>
+
+  <footer>
+    <p>
+      <a href="https://arxiv.org/abs/2606.17441">Paper</a> ·
+      <a href="https://github.com/mo374z/PatientsWithPersonality">Code</a>
+    </p>
+    <p>Page template adapted for Patients With Personality. Built with plain HTML &amp; CSS.</p>
+  </footer>
+
+</body>
+</html>
