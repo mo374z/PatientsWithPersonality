@@ -1,0 +1,10 @@
+  backend: VLLM
+  name: mistralai/Ministral-3-14B-Instruct-2512
+  batch_size: 16
+  engine_kwargs:
+    tensor_parallel_size: 1
+    gpu_memory_utilization: 0.8
+    max_model_len: 8192
+  sampling_kwargs:
+    temperature: 0.05
+    max_tokens: 1024

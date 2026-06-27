@@ -1,0 +1,4 @@
+{
+  "OPENROUTER_KEY": "sk-or-v1-your-openrouter-api-key",
+  "GOOGLE_CLOUD_PROJECT": "your-gcp-project-id"
+}

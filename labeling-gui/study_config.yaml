@@ -1,0 +1,82 @@
+# Unified study config for the labeling app.
+#
+# realism: real-vs-simulated detection with content/style realism ratings
+#   sources: patient subfolder names from results-dir; "real" is a valid entry
+#   cases: list of conversation IDs
+#   n_samples_per_case: for each case, sample this many sources without replacement
+#
+# personality: HEXACO personality trait recovery
+#   patients: simulator subfolder names from results-dir
+#   cases: list of conversation IDs to include; omit for all available
+
+realism:
+  sources:
+    - real
+    - BaselinePatient
+    - AgentClinicPatient_nobias
+    - PatientSimPatient_persplain_cefrB_dazednormal_recallhigh
+    # - PatientsWithPersonality_H1_E1_X2_A1_C1_O1_LB
+    - PatientsWithPersonality_H2_E1_X1_A2_C2_O1_LB
+  cases:
+    - VS000
+    - VS001
+    - VS002
+    - VS005
+    - VS007
+    # - VS008
+    - VS009
+    - VS012
+    - VS013
+    - VS014
+    - VS015
+    # - VS017
+    # - VS018
+    # - VS019
+    # - VS022
+    # - VS023
+    # - VS024
+    # - VS030
+    # - VS035
+    # - VS036
+    # - VS037
+    # - VS038
+  n_samples_per_case: 3
+
+personality:
+  patients:
+    - PatientsWithPersonality_H3_E1_X1_A1_C1_O1_LB
+    - PatientsWithPersonality_H1_E3_X1_A1_C1_O1_LB
+    - PatientsWithPersonality_H1_E1_X3_A1_C1_O1_LB
+    - PatientsWithPersonality_H1_E1_X1_A3_C1_O1_LB
+    - PatientsWithPersonality_H1_E1_X1_A1_C3_O1_LB
+    - PatientsWithPersonality_H1_E1_X1_A1_C1_O3_LB
+    - PatientSimPatient_persdistrust_cefrB_dazednormal_recalllow
+    - PatientSimPatient_persoveranxious_cefrB_dazednormal_recallhigh
+    - PatientSimPatient_persverbose_cefrB_dazednormal_recallhigh
+    - PatientSimPatient_persimpatient_cefrB_dazednormal_recallhigh
+    - PatientSimPatient_persplain_cefrB_dazedhigh_recalllow
+    - PatientSimPatient_persdistrust_cefrB_dazednormal_recallhigh
+  n_samples_per_case: 6
+  cases:
+    # - VS000
+    # - VS001
+    # - VS002
+    # - VS005
+    # - VS007
+    # - VS008
+    # - VS009
+    # - VS012
+    # - VS013
+    # - VS014
+    - VS015
+    - VS017
+    # - VS018
+    - VS019
+    - VS022
+    # - VS023
+    - VS024
+    # - VS030
+    # - VS035
+    # - VS036
+    # - VS037
+    # - VS038

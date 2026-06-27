@@ -1,0 +1,19 @@
+profiles_path: data/tuning_profiles.json
+output_dataset_path: data/tuning_dataset.csv
+total_rows: 300
+seed: 42
+
+meta_model:
+  backend: VLLM
+  name: Qwen/Qwen3-4B-Instruct-2507
+  engine_kwargs:
+    tensor_parallel_size: 1
+    gpu_memory_utilization: 0.8
+    max_model_len: 8192
+  sampling_kwargs:
+    temperature: 0.7
+    max_tokens: 512
+
+hydra:
+  run:
+    dir: .

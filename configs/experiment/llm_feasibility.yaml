@@ -1,0 +1,27 @@
+defaults:
+  - _self_
+
+tests:
+  - test_downplay
+  - test_emotional_state
+  - test_relevant_field_classification
+  - test_basic_simulation
+  - test_personality_steering
+
+case_name: CAR0001
+case_path: data/osce_bench/extracted_profiles/
+output_csv: results/llm_feasibility/feasibility_scores.csv
+
+model:
+  backend: OPENROUTER
+  name:
+  - minimax/minimax-m2.5
+  - google/gemini-3-flash-preview
+  - anthropic/claude-opus-4.6
+  - openai/gpt-5.2
+  - deepseek/deepseek-v3.2
+  - mistralai/ministral-8b-2512
+  - mistralai/ministral-14b-2512
+  - qwen/qwen3-8b
+  - openai/gpt-oss-20b
+  - google/gemini-3.1-flash-lite-preview

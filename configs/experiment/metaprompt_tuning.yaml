@@ -1,0 +1,38 @@
+defaults:
+  - _self_
+  - models@conversational_model: gemini_3_1_flash_lite_preview
+  - models@llm_judge_model: gemini_3_1_flash_lite_preview
+
+dataset_path: data/tuning_dataset.csv
+initial_prompts_path: data/tuning_prompts.json
+random_seed: 42
+train_sample_n: 111
+test_sample_n: 50
+
+task_description: "Generate a latent role description for a realistic patient simulator. Ppersonal information and axes of the HEXACO personality model are appended to the prompt. The generated role is evaluated by downstream multi-turn anamnesis simulation."
+
+meta_model:
+  backend: VLLM
+  name: mistralai/Ministral-3-14B-Instruct-2512
+  batch_size: 16
+  engine_kwargs:
+    tensor_parallel_size: 1
+    gpu_memory_utilization: 0.8
+    max_model_len: 1024
+  sampling_kwargs:
+    temperature: 0.05
+    max_tokens: 512
+
+promptolution:
+  optimizer: capo
+  eval_strategy: sequential_block
+  n_steps: 99
+  n_subsamples: 20
+  upper_shots: 0 # we don't use few-shot samples in this tuning setting
+
+quota_retry:
+  max_attempts: 10
+  initial_delay_seconds: 20
+  max_delay_seconds: 300
+
+output_path: results/metaprompt_tuning

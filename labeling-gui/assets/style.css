@@ -1,0 +1,377 @@
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0;
+    background: #f5f6fa;
+}
+
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 240px;
+    height: 100vh;
+    background: #2c3e50;
+    color: #ecf0f1;
+    padding: 20px;
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+
+.sidebar h3 {
+    margin-top: 0;
+    font-size: 16px;
+    color: #ecf0f1;
+}
+
+.sidebar .nav-link {
+    display: block;
+    padding: 10px 12px;
+    margin: 4px 0;
+    color: #bdc3c7;
+    text-decoration: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.sidebar .nav-link:hover {
+    background: #34495e;
+    color: #fff;
+}
+
+.sidebar .nav-link.active {
+    background: #3498db;
+    color: #fff;
+}
+
+.sidebar .progress-text {
+    font-size: 12px;
+    color: #95a5a6;
+    margin-left: 12px;
+}
+
+.sidebar .user-id-display {
+    font-size: 13px;
+    color: #95a5a6;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #34495e;
+}
+
+.main-content {
+    margin-left: 260px;
+    padding: 24px 32px;
+    min-height: 100vh;
+}
+
+.task-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.task-counter {
+    font-weight: 600;
+    font-size: 15px;
+    color: #2c3e50;
+}
+
+.nav-buttons button {
+    margin-left: 8px;
+}
+
+/* Patient info banner */
+.patient-info-bar {
+    background: #fff;
+    border-left: 4px solid #3498db;
+    border-radius: 6px;
+    padding: 10px 16px;
+    margin-bottom: 12px;
+    font-size: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+/* Side-by-side layout: chat + assessment */
+.labeling-layout {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+.labeling-chat {
+    flex: 3;
+    min-width: 0;
+    max-height: 72vh;
+    overflow-y: auto;
+}
+
+.labeling-assessment {
+    flex: 2;
+    min-width: 320px;
+    position: sticky;
+    top: 24px;
+}
+
+/* Conversation chat */
+.conversation-container {
+    background: #fff;
+    border-radius: 8px;
+    padding: 0 20px 20px 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.chat-legend {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0 10px 0;
+    border-bottom: 1px solid #ecf0f1;
+    margin-bottom: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #7f8c8d;
+    position: sticky;
+    top: 0;
+    background: #fff;
+    z-index: 1;
+}
+
+.chat-legend-doctor {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.chat-legend-patient {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.chat-icon {
+    font-size: 18px;
+}
+
+.turn {
+    margin-bottom: 10px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.turn-number {
+    min-width: 20px;
+    font-size: 10px;
+    color: #bdc3c7;
+    padding-top: 10px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.turn-bubble {
+    padding: 9px 13px;
+    border-radius: 10px;
+    max-width: 78%;
+    line-height: 1.5;
+    font-size: 14px;
+}
+
+.turn-doctor .turn-bubble {
+    background: #ecf0f1;
+    color: #2c3e50;
+    border-top-left-radius: 2px;
+}
+
+.turn-patient .turn-bubble {
+    background: #d4edfc;
+    color: #1a3a4a;
+    border-left: 3px solid #3498db;
+    border-top-right-radius: 2px;
+    margin-left: auto;
+}
+
+.turn-doctor {
+    justify-content: flex-start;
+}
+
+.turn-patient {
+    justify-content: flex-end;
+}
+
+/* Flaggable patient turns in chat view */
+.turn-patient-flaggable {
+    position: relative;
+    flex-wrap: wrap;
+}
+
+.turn-patient-flaggable .turn-bubble {
+    padding-right: 36px;
+}
+
+.turn-patient-flaggable .flag-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+}
+
+.turn-patient-flaggable .flag-annotation {
+    width: 100%;
+    margin-left: auto;
+    max-width: 78%;
+}
+
+.turn-flagged .turn-bubble {
+    background: #fdecea;
+    border-left-color: #e74c3c;
+}
+
+.controls-panel {
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    margin-bottom: 20px;
+}
+
+.controls-panel h4 {
+    margin-top: 0;
+    color: #2c3e50;
+    border-bottom: 1px solid #ecf0f1;
+    padding-bottom: 8px;
+}
+
+/* Flag buttons & annotations */
+.flag-btn {
+    background: none;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 2px 6px;
+    color: #95a5a6;
+    line-height: 1;
+}
+
+.flag-btn:hover {
+    background: #fadbd8;
+    border-color: #e74c3c;
+    color: #e74c3c;
+}
+
+.flag-btn.flagged {
+    background: #e74c3c;
+    color: #fff;
+    border-color: #e74c3c;
+}
+
+.flag-annotation {
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(231,76,60,0.2);
+    font-size: 12px;
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 2px;
+}
+
+.rating-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+    flex: 1;
+}
+
+.rating-row > div:last-child {
+    flex: 1;
+}
+
+/* Tooltip */
+.tooltip-wrapper {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 4px;
+}
+
+.tooltip-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    border: 1px solid #aaa;
+    font-size: 10px;
+    color: #7f8c8d;
+    cursor: help;
+    font-style: normal;
+    line-height: 1;
+}
+
+.rating-label {
+    min-width: 140px;
+    font-size: 13px;
+    color: #2c3e50;
+}
+
+/* Welcome page */
+.welcome-container {
+    max-width: 640px;
+    margin: 60px auto;
+    text-align: center;
+}
+
+.welcome-container h2 {
+    color: #2c3e50;
+    margin-bottom: 8px;
+}
+
+.welcome-container p {
+    color: #7f8c8d;
+    margin-bottom: 24px;
+}
+
+.welcome-container input {
+    height: 42px;
+    box-sizing: border-box;
+}
+
+.hexaco-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.hexaco-item {
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+}
+
+.hexaco-item > label {
+    font-weight: 600;
+    color: #2c3e50;
+    display: block;
+    margin-bottom: 6px;
+}
+
+.submit-error {
+    color: #e74c3c;
+    font-size: 12px;
+    margin-top: 6px;
+}
+
+.submitted-badge {
+    display: inline-block;
+    background: #27ae60;
+    color: #fff;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-left: 8px;
+}

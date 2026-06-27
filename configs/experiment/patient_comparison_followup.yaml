@@ -1,0 +1,38 @@
+# @package _global_
+
+defaults:
+  - _self_
+  - models@conversational_model: gemini_3_1_flash_lite_preview
+  - models@meta_model: ministral_3_14B_instruct_2512
+  - models@llm_judge_model: gemini_3_1_flash_lite_preview
+
+output_dir: results/patient_comparison_default
+
+case_descriptions_dir: data/aci_bench/extracted_profiles
+conversations_dir: data/aci_bench/conversations
+conversations:
+  - VS000
+  - VS001
+  - VS002
+  - VS005
+  - VS007
+  - VS008
+  - VS009
+  - VS012
+  - VS013
+  - VS014
+  - VS015
+  - VS017
+  - VS018
+  - VS019
+  - VS022
+  - VS023
+  - VS024
+  - VS030
+  - VS035
+  - VS036
+  - VS037
+  - VS038
+
+patient_configs:
+  - patient_type: RealPatient

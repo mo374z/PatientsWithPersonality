@@ -1,0 +1,19 @@
+backend: APILLM
+name: gemini-3.1-flash-lite-preview
+vertexai: true
+api_key: ${oc.env:GOOGLE_CLOUD_API_KEY,}
+generation_config:
+  # temperature: 1
+  # top_p: 0.95
+  # max_output_tokens: 65535
+  # safety_settings:
+  #   - category: HARM_CATEGORY_HATE_SPEECH
+  #     threshold: "OFF"
+  #   - category: HARM_CATEGORY_DANGEROUS_CONTENT
+  #     threshold: "OFF"
+  #   - category: HARM_CATEGORY_SEXUALLY_EXPLICIT
+  #     threshold: "OFF"
+  #   - category: HARM_CATEGORY_HARASSMENT
+  #     threshold: "OFF"
+  thinking_config:
+    thinking_level: HIGH

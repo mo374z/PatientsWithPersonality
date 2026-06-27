@@ -1,0 +1,60 @@
+# NeurIPS-appropriate figure style.
+# Column width: ~3.25in (single), ~6.75in (full). Font sizes are calibrated
+# so labels remain readable at single-column scale.
+
+# ── Figure ───────────────────────────────────────────────────────────────────
+figure.facecolor      : white
+figure.dpi            : 150
+
+# ── Axes ─────────────────────────────────────────────────────────────────────
+axes.facecolor        : white
+axes.edgecolor        : 0.15
+axes.linewidth        : 0.7
+axes.spines.top       : False
+axes.spines.right     : False
+axes.axisbelow        : True
+axes.labelcolor       : black
+axes.labelpad         : 4
+axes.titlepad         : 6
+
+# ── Grid ─────────────────────────────────────────────────────────────────────
+axes.grid             : False
+
+# ── Font ─────────────────────────────────────────────────────────────────────
+font.family           : sans-serif
+font.sans-serif       : Roboto
+font.size             : 12
+
+axes.labelsize        : 12
+axes.titlesize        : 12
+axes.titleweight      : normal
+
+xtick.labelsize       : 10
+ytick.labelsize       : 10
+
+legend.fontsize       : 10
+legend.title_fontsize : 10
+
+# ── Ticks ────────────────────────────────────────────────────────────────────
+xtick.color           : 0.15
+ytick.color           : 0.15
+xtick.direction       : in
+ytick.direction       : in
+xtick.major.size      : 3.0
+ytick.major.size      : 3.0
+xtick.major.width     : 0.7
+ytick.major.width     : 0.7
+xtick.minor.visible   : False
+ytick.minor.visible   : False
+
+# ── Legend ───────────────────────────────────────────────────────────────────
+legend.frameon        : False
+legend.borderpad      : 0.3
+legend.labelspacing   : 0.3
+
+# ── Lines & patches ──────────────────────────────────────────────────────────
+lines.linewidth       : 1.2
+patch.linewidth       : 0.4
+
+# ── Error bars ───────────────────────────────────────────────────────────────
+errorbar.capsize      : 3

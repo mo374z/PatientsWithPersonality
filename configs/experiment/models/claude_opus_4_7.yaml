@@ -1,0 +1,4 @@
+backend: APILLM
+name: claude-opus-4-7
+generation_config:
+  max_tokens: 4096

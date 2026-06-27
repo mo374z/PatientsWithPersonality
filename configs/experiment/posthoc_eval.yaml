@@ -1,0 +1,15 @@
+# @package _global_
+
+defaults:
+  - _self_
+  - models@llm_judge_model: gemini_3_1_flash_lite_preview
+
+output_dir: results/patient_comparison_default
+case_descriptions_dir: data/aci_bench/extracted_profiles
+
+filters:
+  # patient_names: ["PatientSimPatient_persimpatient_cefrB_dazednormal_recallhigh"]
+  # conversations: ["VS005"]
+
+metrics:
+  - token_count

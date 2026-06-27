@@ -1,0 +1,9 @@
+# @package _global_
+
+defaults:
+  - _self_
+  - models@extractor_model: gemini_3_1_flash_lite_preview
+
+data_dir: data/helpmed
+dataset_path: ${data_dir}/dataset.csv
+concurrency: 5

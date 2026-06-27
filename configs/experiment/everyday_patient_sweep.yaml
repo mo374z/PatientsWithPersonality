@@ -1,0 +1,23 @@
+# @package _global_
+
+defaults:
+  - _self_
+  - models@conversational_model: gemini_3_1_flash_lite_preview
+  - models@meta_model: ministral_3_14B_instruct_2512
+  - models@llm_judge_model: gemini_3_1_flash_lite_preview
+
+output_dir: results/persona_sweep
+
+case_descriptions_dir: data/aci_bench/extracted_profiles
+conversations_dir: data/aci_bench/conversations
+
+patient_configs:
+  - patient_type: PatientsWithPersonality
+    params:
+      h: [1, 2, 3]
+      e: [1, 2, 3]
+      x: [1, 2, 3]
+      a: [1, 2, 3]
+      c: [1, 2, 3]
+      o: [1, 2, 3]
+      level: [A, B, C]
