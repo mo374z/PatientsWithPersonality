@@ -164,6 +164,49 @@
 
     footer { text-align: center; padding: 40px 24px; color: var(--muted); font-size: 0.9rem; }
     footer a { color: var(--accent-dark); text-decoration: none; }
+
+    .chat-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+    @media (max-width: 720px) { .chat-compare { grid-template-columns: 1fr; } }
+    .chat-col {
+      border: 1px solid var(--border); border-radius: 16px; padding: 20px 20px 22px;
+      background: #fff; display: flex; flex-direction: column;
+    }
+    .chat-head {
+      font-weight: 700; font-size: 1rem; margin-bottom: 16px;
+      display: flex; align-items: center; gap: 9px;
+    }
+    .chat-head em { color: var(--muted); font-weight: 500; font-style: normal; }
+    .dot { width: 14px; height: 14px; border-radius: 50%; flex: none; }
+    .dot.peach { background: #e7b393; }
+    .dot.teal { background: var(--accent); }
+    .thread { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+    .bubble {
+      max-width: 84%; padding: 11px 15px; border-radius: 16px;
+      font-size: 0.95rem; line-height: 1.5;
+      opacity: 0; transform: translateY(16px);
+      transition: opacity .55s ease, transform .55s ease;
+    }
+    .bubble.doc {
+      align-self: flex-start; background: #ededed; color: #2b2b2b;
+      border-bottom-left-radius: 5px;
+    }
+    .bubble.pat { align-self: flex-end; color: #1f1f1f; border-bottom-right-radius: 5px; }
+    .bubble.pat.peach { background: #ecc2a3; }
+    .bubble.pat.teal { background: #a7d8c8; }
+    .verdict {
+      display: flex; flex-direction: column; gap: 7px; margin-top: 20px;
+      font-weight: 600; font-size: 0.95rem;
+      opacity: 0; transform: translateY(16px);
+      transition: opacity .55s ease, transform .55s ease;
+    }
+    .verdict i { margin-right: 9px; }
+    .verdict.bad i { color: #e2574c; }
+    .verdict.good i { color: var(--accent); }
+    .chat-compare.in-view .bubble,
+    .chat-compare.in-view .verdict { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) {
+      .bubble, .verdict { opacity: 1 !important; transform: none !important; transition: none; }
+    }
   </style>
 </head>
 <body>
@@ -175,10 +218,16 @@
       <p class="subtitle">Realistic Patient Simulation through Controlled Diversity and Selective Disclosure</p>
 
       <p class="authors">
-        <a href="https://github.com/mo374z">Moritz Schlager</a>, Friederike Jungmann, Samuel Schmidgall,
+        <a href="https://github.com/mo374z">Moritz Schlager</a>, Friederike Jungmann,
+        <a href="https://scholar.google.com/citations?user=bQDooZEAAAAJ&amp;hl=en">Samuel Schmidgall</a>,
         Philipp Raffler, Franziska Hartl, Eva Wende, Paula Roßmüller, Conrad Ketzer,
-        Avinatan Hassidim, Dale R. Webster, Yossi Matias, Yun Liu, Daniel Rueckert,
-        Mike Schaekermann, Paul Hager
+        <a href="https://scholar.google.com/citations?user=CnBvgwcAAAAJ&amp;hl=en">Avinatan Hassidim</a>,
+        <a href="https://scholar.google.com/citations?user=qAqGfk0AAAAJ&amp;hl=en">Dale R. Webster</a>,
+        <a href="https://scholar.google.com/citations?user=IwSe1-MAAAAJ&amp;hl=en">Yossi Matias</a>,
+        <a href="https://scholar.google.com/citations?user=EojZy50AAAAJ&amp;hl=en">Yun Liu</a>,
+        <a href="https://scholar.google.com/citations?user=H0O0WnQAAAAJ&amp;hl=en">Daniel Rueckert</a>,
+        <a href="https://scholar.google.com/citations?user=mwj_ldQAAAAJ&amp;hl=en">Mike Schaekermann</a>,
+        <a href="https://scholar.google.com/citations?user=ESLUtGAAAAAJ&amp;hl=en">Paul Hager</a>
       </p>
       <p class="venue">arXiv preprint, 2026</p>
 
@@ -191,12 +240,40 @@
     </div>
   </header>
 
-  <section class="teaser" style="border-bottom:none;">
+  <section class="teaser" style="border-bottom:none; padding-top:48px;">
     <div class="container">
-      <figure>
-        <img src="static/images/realism_subscores.png" alt="Clinician realism evaluation">
-        <figcaption><b>Clinician evaluation.</b> PWP (green) is judged nearly as realistic as recorded human actors across symptom realism, information control, and style — and clearly ahead of prior simulators.</figcaption>
-      </figure>
+      <p class="abstract" style="text-align:center; margin:0 auto 34px;">
+        Prompted with a single question, current simulators dump the entire case in one overly cooperative turn.
+        PWP answers only what is asked &mdash; disclosing selectively across turns, the way real patients do.
+      </p>
+      <div class="chat-compare">
+        <div class="chat-col">
+          <div class="chat-head"><span class="dot peach"></span> Current patient simulators</div>
+          <div class="thread">
+            <div class="bubble doc" style="transition-delay:.05s">What brings you in today?</div>
+            <div class="bubble pat peach" style="transition-delay:.3s">I&rsquo;ve had sharp chest pain for 3.3 hours, 8/10 severity, radiating to my left arm. I have hypertension with BP around 140/90 and type 2 diabetes. I take metformin 500mg twice daily and lisinopril. My father died of a heart attack at 62. Sometimes I drink on weekends and don&rsquo;t smoke.</div>
+          </div>
+          <div class="verdict bad" style="transition-delay:.6s">
+            <span><i class="fas fa-circle-xmark"></i> overshares information</span>
+            <span><i class="fas fa-circle-xmark"></i> overly cooperative</span>
+          </div>
+        </div>
+        <div class="chat-col">
+          <div class="chat-head"><span class="dot teal"></span> PatientsWithPersonality <em>(Ours)</em></div>
+          <div class="thread">
+            <div class="bubble doc" style="transition-delay:.05s">What brings you in today?</div>
+            <div class="bubble pat teal" style="transition-delay:.25s">My chest hurts!</div>
+            <div class="bubble doc" style="transition-delay:.55s">When did it start?</div>
+            <div class="bubble pat teal" style="transition-delay:.8s">Few hours ago, I think. Don&rsquo;t really remember exactly.</div>
+            <div class="bubble doc" style="transition-delay:1.1s">Are there any heart problems in the family?</div>
+            <div class="bubble pat teal" style="transition-delay:1.35s">My dad had something with his heart.</div>
+          </div>
+          <div class="verdict good" style="transition-delay:1.6s">
+            <span><i class="fas fa-circle-check"></i> selective information disclosure</span>
+            <span><i class="fas fa-circle-check"></i> controlled diversity</span>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -205,19 +282,21 @@
       <h2>Abstract</h2>
       <div class="abstract">
         <p>
-          Simulating realistic patient interactions is a key requirement to testing clinical applications of LLMs at scale
-          without time-consuming and expensive user studies. However, existing approaches often lack realism and
-          controllability, often oversharing information unprompted, and failing to capture the wide variability of patient
-          behavior. Here, we introduce <b>PatientsWithPersonality (PWP)</b>, a patient simulation framework that generates
-          realistic yet diverse virtual patient responses through explicit personality parametrization over a latent patient
-          state. Grounded in <b>HEXACO</b>, a six-dimensional personality space used to quantify and parameterize human
-          behavioral traits, our approach enables fine-grained control over conversational style, cooperativeness, and
-          information disclosure within a unified framework. In a clinician evaluation, PWP is judged nearly as realistic as
-          recorded human actors and clearly ahead of prior simulators, while being flagged as &ldquo;too informative&rdquo;
-          far less often. Conditioning on HEXACO axes yields personas whose configured traits are recoverable by both
-          clinicians and an autorater, span a substantially wider behavioral footprint than the closest baseline, and prevent
-          oversharing. Altogether, our framework paves the way for more accurate and informative LLM benchmarking through our
-          realistic and steerable patient simulator.
+          Testing clinical LLMs usually means slow, expensive user studies &mdash; or patient simulators that
+          don&rsquo;t behave like real patients. Existing simulators tend to overshare, cooperate uniformly, and
+          flatten the natural variety of how people actually talk to a doctor.
+        </p>
+        <p style="margin-top:16px;">
+          <b>PatientsWithPersonality (PWP)</b> takes a different route: it parametrizes each virtual patient over
+          <b>HEXACO</b>, the six-dimensional model psychologists use to describe human personality. Those six axes give
+          fine-grained, recoverable control over how a patient discloses information, how cooperative they are, and how
+          they carry a conversation &mdash; all over a shared latent patient state.
+        </p>
+        <p style="margin-top:16px;">
+          The result is a simulator clinicians judge nearly as realistic as recorded human actors, and clearly ahead of
+          prior work, while being flagged as &ldquo;too informative&rdquo; far less often. Configured personalities are
+          recoverable by both clinicians and an autorater, cover a substantially wider behavioral range than the closest
+          baseline, and curb the oversharing that makes benchmarks too easy.
         </p>
       </div>
     </div>
@@ -267,8 +346,36 @@
 
   <section>
     <div class="container">
+      <h2>Framework</h2>
+      <figure>
+        <img src="static/images/framework.png" alt="PWP framework overview">
+        <figcaption><b>How it works.</b> A one-time initialization compiles a case description and HEXACO parametrization into a latent patient state — a behavioral role and a disclosure grid. At each turn, a meta-LLM classifies the requested field, the latent state picks the matching disclosure variant, and the conversational LLM generates the answer.</figcaption>
+      </figure>
+      <div class="abstract" style="margin-top:24px;">
+        <p>
+          <b>Initialization.</b> Personal background, lifestyle habits, and medical facts are combined with HEXACO traits
+          and a CEFR language level into a <b>behavioral role</b> (tangent topics, emotional state, prior beliefs) and a
+          <b>disclosure grid</b> — lifestyle variants (truthful / downplayed / denied) gated by Honesty-Humility and
+          medical variants (original / fuzzy / omitted) gated by Conscientiousness.
+        </p>
+        <p style="margin-top:14px;">
+          <b>Response generation.</b> For each clinician question, a meta-LLM classifies which field is requested, the
+          latent state selects the appropriate disclosure variant, and the conversational LLM produces the final
+          response — repeating across the multi-turn conversation so disclosure evolves naturally and the patient never
+          overshares.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
       <h2>Results</h2>
-      <div class="grid2">
+      <figure>
+        <img src="static/images/realism_subscores.png" alt="Clinician realism evaluation">
+        <figcaption><b>Clinician evaluation.</b> PWP (green) is judged nearly as realistic as recorded human actors across symptom realism, information control, and style — and clearly ahead of prior simulators.</figcaption>
+      </figure>
+      <div class="grid2" style="margin-top:32px;">
         <figure>
           <img src="static/images/disclosure_curve.png" alt="Disclosure curve">
           <figcaption><b>Selective disclosure.</b> PWP discloses fewer fields per turn, closely tracking real humans while baselines overshare.</figcaption>
@@ -278,10 +385,26 @@
           <figcaption><b>Steerable behavior.</b> Conditioning on HEXACO axes measurably changes information handling per persona.</figcaption>
         </figure>
       </div>
-      <figure style="margin-top:32px;">
-        <img src="static/images/benchmark_performance.png" alt="Downstream benchmark performance">
-        <figcaption><b>Downstream benchmarking.</b> Diagnostic accuracy when an LLM doctor interviews each simulator across backends.</figcaption>
-      </figure>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <h2>Outlook</h2>
+      <div class="abstract">
+        <p>
+          PWP turns patient simulation into a controllable axis of evaluation rather than a fixed backdrop. By dialing
+          HEXACO traits, the same clinical case can probe how a diagnostic system copes with guarded, anxious, talkative,
+          or unreliable patients — surfacing failure modes that uniform, overly cooperative simulators hide entirely.
+        </p>
+        <p style="margin-top:16px;">
+          We see several directions ahead: scaling to larger and more diverse case sets, grounding personalities in real
+          de-identified encounters, extending beyond history-taking to physical exams and multimodal cues, and adding
+          longitudinal patients whose state evolves across visits. More broadly, steerable patient simulation offers a
+          safe, reproducible substrate for stress-testing medical LLMs before they ever reach a clinic — and a path
+          toward training communication skills for both AI systems and clinicians.
+        </p>
+      </div>
     </div>
   </section>
 
@@ -307,8 +430,21 @@
       <a href="https://arxiv.org/abs/2606.17441">Paper</a> ·
       <a href="https://github.com/mo374z/PatientsWithPersonality">Code</a>
     </p>
-    <p>Page template adapted for Patients With Personality. Built with plain HTML &amp; CSS.</p>
   </footer>
+
+  <script>
+    (function () {
+      var el = document.querySelector('.chat-compare');
+      if (!el) return;
+      if (!('IntersectionObserver' in window)) { el.classList.add('in-view'); return; }
+      var obs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) { e.target.classList.add('in-view'); obs.unobserve(e.target); }
+        });
+      }, { threshold: 0.25 });
+      obs.observe(el);
+    })();
+  </script>
 
 </body>
 </html>

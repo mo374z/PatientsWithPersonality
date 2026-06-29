@@ -25,11 +25,15 @@
 
 ---
 
-## Abstract
+This repository contains the full code for the paper: the **PWP simulator**, **re-implementations of five prior patient simulators** under a shared interface, the **Hydra-configured evaluation and benchmarking pipeline**, and the **Streamlit/Dash GUIs** used in the clinician study.
 
-> Simulating realistic patient interactions is a key requirement to testing clinical applications of LLMs at scale without time-consuming and expensive user studies. However, existing approaches often lack realism and controllability, often oversharing information unprompted, and failing to capture the wide variability of patient behavior. Here, we introduce **PatientsWithPersonality (PWP)**, a patient simulation framework that generates realistic yet diverse virtual patient responses through explicit personality parametrization over a latent patient state. Grounded in **HEXACO**, a six-dimensional personality space used to quantify and parameterize human behavioral traits, our approach enables fine-grained control over conversational style, cooperativeness, and information disclosure within a unified framework. In a clinician evaluation, PWP is judged nearly as realistic as recorded human actors and clearly ahead of prior simulators, while being flagged as "too informative" far less often. Conditioning on HEXACO axes yields personas whose configured traits are recoverable by both clinicians and an autorater, span a substantially wider behavioral footprint than the closest baseline, and prevent oversharing. Altogether, our framework paves the way for more accurate and informative LLM benchmarking through our realistic and steerable patient simulator.
+## Motivation
 
-This repository contains the full code for the paper: the **PWP simulator**, **re-implementations of five prior patient simulators** for direct comparison, the **evaluation and benchmarking pipeline**, and the **labeling GUIs** used in the clinician study.
+<p align="center">
+  <img src="docs/static/images/motivation.png" width="80%" alt="Oversharing baselines vs. PWP selective disclosure">
+</p>
+
+Realistic patient simulation is needed to benchmark clinical LLMs at scale without time-consuming, expensive user studies. Yet existing simulators behave unlike real patients: prompted with a single question, they dump the entire case — diagnoses, medications, family history, lifestyle — in one overly cooperative turn. Real patients disclose selectively, recall imperfectly, and vary widely in how they communicate. PWP closes this gap by parametrizing patient behavior over personality, so a virtual patient reveals only what is asked, the way a real person would.
 
 ## Highlights
 
@@ -38,6 +42,21 @@ This repository contains the full code for the paper: the **PWP simulator**, **r
 - 🎭 **Controlled diversity** — configured traits span a substantially wider behavioral footprint than the closest baseline.
 - 👩‍⚕️ **Clinician-validated** — judged nearly as realistic as recorded human actors in a blinded clinician study.
 - 🔬 **Reproducible benchmark** — Hydra-configured experiment suite spanning multiple simulators and LLM backends.
+
+## Framework
+
+<p align="center">
+  <img src="docs/static/images/framework.png" width="100%" alt="PWP framework overview">
+</p>
+
+PWP separates a one-time **initialization** from per-turn **response generation**, mediated by a **latent patient state**.
+
+**Initialization.** A case description (personal background, lifestyle habits, medical facts) and a personality parametrization (HEXACO traits + CEFR language level) are combined by meta-LLM operations into:
+
+- a **behavioral role** — tangent topics drawn from personal information, an emotional state driven by Emotionality (E), and prior beliefs driven by Openness (O);
+- a **disclosure grid** — lifestyle fields in truthful / downplayed / denied variants gated by Honesty-Humility (H), and medical facts in original / fuzzy / omitted variants gated by Conscientiousness (C).
+
+**Response generation.** For each clinician question, a meta-LLM classifies which case field is being requested, the latent state selects the appropriate disclosure variant, and the conversational LLM generates the final answer. This repeats across the multi-turn conversation, so disclosure evolves naturally and the patient never overshares.
 
 ## Results
 
@@ -53,11 +72,6 @@ This repository contains the full code for the paper: the **PWP simulator**, **r
 </td>
 </tr>
 </table>
-
-<p align="center">
-  <img src="docs/static/images/benchmark_performance.png" width="100%" alt="Downstream benchmark performance">
-</p>
-<p align="center"><sub><b>Downstream benchmarking.</b> Diagnostic accuracy when an LLM doctor interviews each simulator across backends.</sub></p>
 
 ## Patient Simulators
 

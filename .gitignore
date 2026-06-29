@@ -3,6 +3,7 @@ logs/
 results/
 outputs/
 .hydra/
+.claude/
 multirun/
 .github/
 keys.json
