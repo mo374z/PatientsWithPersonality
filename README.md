@@ -15,12 +15,6 @@
 
 </p>
 
-<p align="center">
-  <img src="docs/static/images/realism_subscores.png" width="100%" alt="Clinician realism evaluation">
-</p>
-
-<em>PWP is judged nearly as realistic as recorded human actors and clearly ahead of prior simulators,<br>while being flagged as "too informative" far less often.</em>
-
 </div>
 
 ---
@@ -60,18 +54,11 @@ PWP separates a one-time **initialization** from per-turn **response generation*
 
 ## Results
 
-<table>
-<tr>
-<td width="50%" valign="top">
-<img src="docs/static/images/disclosure_curve.png" alt="Disclosure curve">
-<p align="center"><sub><b>Selective disclosure.</b> PWP discloses fewer fields per turn — closely tracking real humans, while baselines overshare.</sub></p>
-</td>
-<td width="50%" valign="top">
-<img src="docs/static/images/personality_info_handling.png" alt="Personality-conditioned information handling">
-<p align="center"><sub><b>Steerable behavior.</b> Conditioning on HEXACO axes measurably changes information handling per persona.</sub></p>
-</td>
-</tr>
-</table>
+<p align="center">
+  <img src="docs/static/images/realism_subscores.png" width="100%" alt="Clinician realism evaluation">
+</p>
+
+In a blinded clinician study, PWP is judged nearly as realistic as recorded human actors and clearly ahead of prior simulators, while being flagged as "too informative" far less often. Full analyses — selective disclosure, HEXACO steerability, and conversational diversity — are on the [project page](https://mo374z.github.io/PatientsWithPersonality/).
 
 ## Patient Simulators
 
