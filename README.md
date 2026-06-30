@@ -19,7 +19,7 @@
 
 ---
 
-This repository contains the full code for the paper: the **PWP simulator**, **re-implementations of five prior patient simulators** under a shared interface, the **Hydra-configured evaluation and benchmarking pipeline**, and the **Streamlit/Dash GUIs** used in the clinician study.
+This repository contains the full code for the paper: the **PWP simulator**, **re-implementations of five prior patient simulators** under a shared interface, the **Hydra-configured evaluation pipeline**, and the **Streamlit/Dash GUIs** used in the clinician study.
 
 ## Motivation
 
@@ -35,7 +35,7 @@ Realistic patient simulation is needed to benchmark clinical LLMs at scale witho
 - 🤐 **Selective disclosure** — patients reveal information only when prompted, preventing the unprompted oversharing that plagues prior simulators.
 - 🎭 **Controlled diversity** — configured traits span a substantially wider behavioral footprint than the closest baseline.
 - 👩‍⚕️ **Clinician-validated** — judged nearly as realistic as recorded human actors in a blinded clinician study.
-- 🔬 **Reproducible benchmark** — Hydra-configured experiment suite spanning multiple simulators and LLM backends.
+- 🔬 **Reproducible evaluation** — Hydra-configured experiment suite spanning multiple simulators and LLM backends.
 
 ## Framework
 
@@ -52,13 +52,6 @@ PWP separates a one-time **initialization** from per-turn **response generation*
 
 **Response generation.** For each clinician question, a meta-LLM classifies which case field is being requested, the latent state selects the appropriate disclosure variant, and the conversational LLM generates the final answer. This repeats across the multi-turn conversation, so disclosure evolves naturally and the patient never overshares.
 
-## Results
-
-<p align="center">
-  <img src="docs/static/images/realism_subscores.png" width="100%" alt="Clinician realism evaluation">
-</p>
-
-In a blinded clinician study, PWP is judged nearly as realistic as recorded human actors and clearly ahead of prior simulators, while being flagged as "too informative" far less often. Full analyses — selective disclosure, HEXACO steerability, and conversational diversity — are on the [project page](https://mo374z.github.io/PatientsWithPersonality/).
 
 ## Patient Simulators
 
@@ -73,29 +66,6 @@ The repository implements PWP alongside re-implementations of prior simulators u
 | `AgentClinicPatient` | Schmidgall et al., 2024 | Dialogue simulation supporting 11 cognitive and social biases. |
 | `StateAwarePatient` | Liao et al., 2024 | State tracker + three-tier memory bank for precise behavioral control. |
 | `PatientSimPatient` | Kyung et al., 2025 | Persona axes: CEFR level, personality, memory recall, dazedness. |
-
-<details>
-<summary><b>Architecture details</b></summary>
-
-### PatientsWithPersonality (ours)
-- **HEXACO traits** (each scored 1–3): Honesty-Humility, Emotionality, Extraversion, Agreeableness, Conscientiousness, Openness.
-- **Dynamic disclosure**: leisure fields (tobacco, alcohol, drugs, …) drawn from a three-column grid — truthful / downplayed / denied — based on the Honesty-Humility score.
-- **Fuzzy medical history**: Conscientiousness controls recall precision (exact → approximate → vague).
-- **Lazy initialization**: prior beliefs (Openness), emotional state (Emotionality), tangent topics (Extraversion), and a latent role description are generated once on first call via a meta-LLM.
-- **Per-turn field classification**: a meta-LLM classifies which case fields are relevant to each doctor question, letting disclosure evolve across the conversation.
-
-### StateAwarePatient (Liao et al., 2024)
-- **State Tracker**: classifies doctor actions into 8 states (A-A-A, A-A-B, A-B, B-A-A, B-A-B, B-B, C, D).
-  - A: Inquiry · B: Advice · C: Demand (physical actions) · D: Other Topics.
-- **Memory Bank**: long-term (patient info), working (response requirements), short-term (dialogue history).
-- **Response Generator**: context-aware responses grounded in patient data to prevent hallucination.
-
-### PatientSimPatient (Kyung et al., 2025)
-- **CEFR language level**: A / B / C with matched medical vocabulary lists.
-- **Personality**: plain, verbose, pleasing, impatient, distrust, overanxious.
-- **Memory recall**: low / high · **Dazedness**: normal / moderate / high (fades over the conversation).
-
-</details>
 
 ## Installation
 
@@ -120,15 +90,11 @@ Experiments are configured with [Hydra](https://hydra.cc/); configs live in [`co
 ```bash
 # Compare simulators on the default case set
 uv run python scripts/run_patient_comparison.py
-
-# Run the downstream diagnostic benchmark
-uv run python scripts/run_helpmed_benchmark.py
 ```
 
 | Script | Purpose |
 |---|---|
 | `scripts/run_patient_comparison.py` | Run and evaluate all simulators side by side. |
-| `scripts/run_helpmed_benchmark.py` | Downstream diagnostic benchmark across LLM backends. |
 | `scripts/run_metaprompt_tuning.py` | Tune the meta-prompts driving the simulator. |
 | `scripts/run_posthoc_eval.py` | Re-score existing conversation results. |
 | `scripts/run_llm_feasibility.py` | Probe LLM-backend feasibility. |
