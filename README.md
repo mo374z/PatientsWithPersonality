@@ -31,10 +31,10 @@ Realistic patient simulation is needed to benchmark clinical LLMs at scale witho
 
 ## Highlights
 
-- 🧬 **HEXACO-grounded personas** — six personality axes (Honesty-Humility, Emotionality, Extraversion, Agreeableness, Conscientiousness, Openness) give fine-grained, recoverable control over how a patient behaves.
-- 🤐 **Selective disclosure** — patients reveal information only when prompted, preventing the unprompted oversharing that plagues prior simulators.
-- 🎭 **Controlled diversity** — configured traits span a substantially wider behavioral footprint than the closest baseline.
-- 👩‍⚕️ **Clinician-validated** — judged nearly as realistic as recorded human actors in a blinded clinician study.
+- 🧬 **Parametrizable Personas** — six personality axes (Honesty-Humility, Emotionality, Extraversion, Agreeableness, Conscientiousness, Openness) give fine-grained, recoverable control over how a patient behaves.
+- 🤐 **Selective disclosure of information** — patients reveal information only when prompted, preventing the unprompted oversharing that plagues prior simulators.
+- 🎭 **Diverse Population Coverage** — configured traits span a substantially wider behavioral footprint than the closest baseline.
+- 👩‍⚕️ **Validated by Real Clinicians** — judged nearly as realistic as recorded human actors in a blinded clinician study.
 - 🔬 **Reproducible evaluation** — Hydra-configured experiment suite spanning multiple simulators and LLM backends.
 
 ## Framework
@@ -61,11 +61,11 @@ The repository implements PWP alongside re-implementations of prior simulators u
 |---|---|---|
 | **PatientsWithPersonality** | *Ours* | HEXACO-grounded realistic recall and selective disclosure over a latent patient state. |
 | `BaselinePatient` | — | Rephrases the ground-truth transcript responses. Lower-bound baseline with access to gold answers. |
-| `VirtualPatient` | EasyMED | Single-turn system prompt rebuilt each turn from a JSON case and a rolling history window. |
-| `CraftMDPatient` | Johri et al., 2023 | Prompt-based simulation; responses kept to one layman sentence. |
-| `AgentClinicPatient` | Schmidgall et al., 2024 | Dialogue simulation supporting 11 cognitive and social biases. |
-| `StateAwarePatient` | Liao et al., 2024 | State tracker + three-tier memory bank for precise behavioral control. |
-| `PatientSimPatient` | Kyung et al., 2025 | Persona axes: CEFR level, personality, memory recall, dazedness. |
+| `VirtualPatient` | [Zhang et al., 2025](https://arxiv.org/abs/2511.14783) | Single-turn system prompt rebuilt each turn from a JSON case and a rolling history window. |
+| `CraftMDPatient` | [Johri et al., 2023](https://www.medrxiv.org/content/10.1101/2023.09.12.23295399v2) | Prompt-based simulation; responses kept to one layman sentence. |
+| `AgentClinicPatient` | [Schmidgall et al., 2024](https://arxiv.org/abs/2405.07960) | Dialogue simulation supporting 11 cognitive and social biases. |
+| `StateAwarePatient` | [Liao et al., 2024](https://arxiv.org/abs/2403.08495) | State tracker + three-tier memory bank for precise behavioral control. |
+| `PatientSimPatient` | [Kyung et al., 2025](https://arxiv.org/abs/2505.17818) | Persona axes: CEFR level, personality, memory recall, dazedness. |
 
 ## Installation
 
