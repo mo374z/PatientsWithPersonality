@@ -4,10 +4,12 @@ results/
 outputs/
 .hydra/
 .claude/
+CLAUDE.md
 multirun/
 .github/
 keys.json
 cloudflared.deb
+*.DS_Store
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
