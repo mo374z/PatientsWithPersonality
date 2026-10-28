@@ -2,6 +2,9 @@ profiles_path: data/tuning_profiles.json
 output_dataset_path: data/tuning_dataset.csv
 total_rows: 300
 seed: 42
+test_fraction: 0.3
+register: spoken
+answer_form: 0.45
 
 meta_model:
   backend: VLLM
