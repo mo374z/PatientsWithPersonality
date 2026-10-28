@@ -4,12 +4,14 @@ import logging
 import pandas as pd
 import csv
 import json
-from tqdm import tqdm
 from readability import Readability
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 from patient_simulator.misc.llm import LLM
-from patient_simulator.data_extraction import extract_patient_profile_from_text
+from patient_simulator.data_extraction import (
+    AtomicFacts,
+    extract_patient_profile_from_text,
+)
 from patient_simulator.prompts.eval_prompts import (
     EVAL_CASE_EXTRACTION_PROMPT,
     PROFILE_FIDELITY_PROMPT,
@@ -19,12 +21,7 @@ from patient_simulator.prompts.eval_prompts import (
     REALISM_CONTENT_EVALUATION_PROMPT,
     REALISM_STYLE_EVALUATION_PROMPT,
     PERSONA_CONSISTENCY_EVALUATION_PROMPT,
-    PERSONALITY_RECON_H_PROMPT,
-    PERSONALITY_RECON_E_PROMPT,
-    PERSONALITY_RECON_X_PROMPT,
-    PERSONALITY_RECON_A_PROMPT,
-    PERSONALITY_RECON_C_PROMPT,
-    PERSONALITY_RECON_O_PROMPT,
+    PERSONALITY_RECON_VARIANTS,
     TAGGED_FACT_EXTRACTION_PROMPT,
     REALISM_JUDGE_PROMPT,
     CaseDescription,
@@ -35,6 +32,7 @@ from patient_simulator.patients.pwp import (
     MEDICAL_FIELDS,
     StringFields,
 )
+from patient_simulator.misc.display_names import HEXACO_AXES
 from patient_simulator.misc.utils import extract_tagged_text
 
 logging.getLogger().setLevel(logging.WARNING)
@@ -48,15 +46,6 @@ except LookupError:
     import nltk
 
     nltk.download("punkt_tab", quiet=True)
-
-
-class _AtomicFactsExtraction(pydantic.BaseModel):
-    """Structured extraction container for patient atomic facts."""
-
-    facts: list[str] = pydantic.Field(
-        default_factory=list,
-        description="Atomic patient facts as a list of single, checkable statements.",
-    )
 
 
 class _FactFidelityBatch(pydantic.BaseModel):
@@ -176,6 +165,17 @@ async def _compare_profiles(
     return fidelity_counts
 
 
+def format_transcript(full_conv: pd.DataFrame) -> str:
+    """Render doctor/patient turns as the plain transcript passed to judge prompts."""
+    lines = []
+    for _, row in full_conv.iterrows():
+        if pd.notna(row["doctor_question"]):
+            lines.append(f"Doctor: {row['doctor_question']}")
+        if pd.notna(row["simulated_response"]):
+            lines.append(f"Patient: {row['simulated_response']}")
+    return "\n".join(lines)
+
+
 async def evaluate_profile_fidelity(
     full_conv: pd.DataFrame,
     case_data: Dict[str, Any],
@@ -183,13 +183,7 @@ async def evaluate_profile_fidelity(
     extraction_prompt: str = EVAL_CASE_EXTRACTION_PROMPT,
     patient_profile_class=CaseDescription,
 ) -> Dict[str, int]:
-    transcript_lines = []
-    for _, row in full_conv.iterrows():
-        if pd.notna(row["doctor_question"]):
-            transcript_lines.append(f"Doctor: {row['doctor_question']}")
-        if pd.notna(row["simulated_response"]):
-            transcript_lines.append(f"Patient: {row['simulated_response']}")
-    transcript = "\n".join(transcript_lines)
+    transcript = format_transcript(full_conv)
 
     real_profile = case_data
 
@@ -235,13 +229,13 @@ async def evaluate_fact_fidelity(
 
     extracted = await llm.generate_response(
         prompt=extraction_prompt,
-        outlines_class=_AtomicFactsExtraction,
+        outlines_class=AtomicFacts,
     )
     parsed = extracted["response"]
     payload = (
         parsed.model_dump()
         if isinstance(parsed, pydantic.BaseModel)
-        else _AtomicFactsExtraction.model_validate(parsed).model_dump()
+        else AtomicFacts.model_validate(parsed).model_dump()
     )
     atomic_facts = [str(fact).strip() for fact in payload["facts"] if str(fact).strip()]
     case_fields_json = json.dumps(case_data, ensure_ascii=False, indent=2)
@@ -484,26 +478,29 @@ async def evaluate_persona_consistency(
 async def reconstruct_personality_params(
     conversation: str,
     llm: LLM,
+    prompt_variant: str,
     subset: Optional[set[str]] = None,
 ) -> Dict[str, Optional[int]]:
-    """Reconstruct requested HEXACO axis levels using one structured LLM call."""
-    trait_prompts = {
-        "H": PERSONALITY_RECON_H_PROMPT,
-        "E": PERSONALITY_RECON_E_PROMPT,
-        "X": PERSONALITY_RECON_X_PROMPT,
-        "A": PERSONALITY_RECON_A_PROMPT,
-        "C": PERSONALITY_RECON_C_PROMPT,
-        "O": PERSONALITY_RECON_O_PROMPT,
-    }
-    axis_order = ["H", "E", "X", "A", "C", "O"]
+    """Reconstruct requested HEXACO axis levels using one structured LLM call.
+
+    ``prompt_variant`` selects the judge prompt: ``anchored`` states the
+    behavioral level criteria used throughout the paper, ``neutral`` names only
+    the HEXACO axis and its scale direction, sharing no wording with the
+    persona-generating prompts.
+    """
+    if prompt_variant not in PERSONALITY_RECON_VARIANTS:
+        raise ValueError(
+            f"Unknown personality reconstruction prompt variant {prompt_variant!r}; "
+            f"available: {sorted(PERSONALITY_RECON_VARIANTS)}"
+        )
+    template, axis_definitions = PERSONALITY_RECON_VARIANTS[prompt_variant]
+
     subset_upper = {axis.upper() for axis in subset} if subset is not None else None
     requested_axes = [
-        axis for axis in axis_order if subset_upper is None or axis in subset_upper
+        axis for axis in HEXACO_AXES if subset_upper is None or axis in subset_upper
     ]
     if not requested_axes:
         raise ValueError("No valid HEXACO axes requested for reconstruction.")
-
-    axis_prompts = "\n\n".join(trait_prompts[axis].strip() for axis in requested_axes)
 
     schema_fields = {
         axis: (
@@ -514,24 +511,18 @@ async def reconstruct_personality_params(
     }
     ReconSchema = pydantic.create_model("HexacoReconSchema", **schema_fields)  # type: ignore
 
-    prompt = (
-        "You are an expert judge inferring HEXACO axes from a doctor-patient conversation.\n"
-        "Use only patient behavior in the provided conversation and choose one level (1..3) per requested axis.\n"
-        "Return only the structured output for requested axes.\n\n"
-        f"Requested axes: {', '.join(requested_axes)}\n\n"
-        "Axis definitions and level criteria:\n"
-        f"{axis_prompts}\n\n"
-        f"Conversation:\n{conversation}"
+    prompt = template.format(
+        requested_axes=", ".join(requested_axes),
+        axis_definitions="\n\n".join(
+            axis_definitions[axis].strip() for axis in requested_axes
+        ),
+        conversation=conversation,
     )
     response = await llm.generate_response(prompt=prompt, outlines_class=ReconSchema)
     parsed = response["response"]
     payload = (
         parsed.model_dump() if isinstance(parsed, pydantic.BaseModel) else dict(parsed)
     )
-
-    print("---")
-    print("RECON CONV:", conversation)
-    print("RECON RESPONSE:", response)
 
     return {axis: int(payload[axis]) for axis in requested_axes}
 
@@ -716,15 +707,7 @@ async def evaluate_realism_judge(
     full_conv: pd.DataFrame,
     llm: LLM,
 ) -> Dict[str, Any]:
-    transcript_lines = []
-    for _, row in full_conv.iterrows():
-        if pd.notna(row["doctor_question"]):
-            transcript_lines.append(f"Doctor: {row['doctor_question']}")
-        if pd.notna(row["simulated_response"]):
-            transcript_lines.append(f"Patient: {row['simulated_response']}")
-    transcript = "\n".join(transcript_lines)
-
-    prompt = REALISM_JUDGE_PROMPT.format(transcript=transcript)
+    prompt = REALISM_JUDGE_PROMPT.format(transcript=format_transcript(full_conv))
     response = await llm.generate_response(
         prompt=prompt, outlines_class=_RealismJudgeOutput
     )
@@ -792,7 +775,7 @@ async def evaluate_conversation(
         SentimentIntensityAnalyzer() if "sentiment_score" in metrics else None
     )
 
-    for idx, row in tqdm(full_conv.iterrows(), total=len(full_conv), leave=False):
+    for idx, row in full_conv.iterrows():
         doctor_q = (
             str(row["doctor_question"]) if pd.notna(row["doctor_question"]) else ""
         )
@@ -918,21 +901,10 @@ async def evaluate_conversation(
     # Reconstruct personality parameters based on full conversation
     if "personality_reconstruction" in metrics:
         try:
-            reconstruction_transcript_lines = []
-            for _, row in full_conv.iterrows():
-                if pd.notna(row["doctor_question"]):
-                    reconstruction_transcript_lines.append(
-                        f"Doctor: {row['doctor_question']}"
-                    )
-                if pd.notna(row["simulated_response"]):
-                    reconstruction_transcript_lines.append(
-                        f"Patient: {row['simulated_response']}"
-                    )
-            reconstruction_transcript = "\n".join(reconstruction_transcript_lines)
-
             reconstruction = await reconstruct_personality_params(
-                conversation=reconstruction_transcript,
+                conversation=format_transcript(full_conv),
                 llm=llm,
+                prompt_variant="anchored",
             )
             for key, value in reconstruction.items():
                 aggregate[f"personality_reconstructed_{key}"] = value
@@ -942,14 +914,7 @@ async def evaluate_conversation(
             )
             logging.error("Full traceback:", exc_info=True)
 
-            for key in [
-                "honesty",
-                "emotional_state",
-                "extraversion",
-                "agreeableness",
-                "conscientiousness",
-                "openness",
-            ]:
+            for key in HEXACO_AXES:
                 aggregate[f"personality_reconstructed_{key}"] = None
 
     # Evaluate Profile Fidelity

@@ -1,0 +1,9 @@
+backend: APILLM
+name: gemini-3.1-flash-lite
+full_name: gemini-3.1-flash-lite-low-thinking
+project: ${oc.env:GOOGLE_CLOUD_PROJECT,}
+vertexai: true
+api_key: ${oc.env:GOOGLE_CLOUD_API_KEY,}
+generation_config:
+  thinking_config:
+    thinking_level: LOW

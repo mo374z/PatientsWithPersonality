@@ -11,27 +11,8 @@ import matplotlib.pyplot as plt
 from patient_simulator.patients.pwp import LEISURE_FIELDS, MEDICAL_FIELDS
 
 _STOPWORDS = {
-    "the",
-    "a",
-    "an",
-    "of",
-    "in",
-    "and",
-    "or",
-    "is",
-    "was",
-    "to",
-    "for",
-    "at",
-    "on",
-    "with",
-    "by",
-    "from",
-    "as",
-    "no",
-    "not",
-    "had",
-    "has",
+    "the", "a", "an", "of", "in", "and", "or", "is", "was", "to", "for",
+    "at", "on", "with", "by", "from", "as", "no", "not", "had", "has",
 }
 
 
@@ -41,9 +22,7 @@ def _token_recall(sim_val, orig_val):
         return np.nan
     if not sim_val or sim_val == "Unknown":
         return 0.0
-    orig_tokens = {
-        t for t in re.findall(r"\w+", orig_val.lower()) if t not in _STOPWORDS
-    }
+    orig_tokens = {t for t in re.findall(r"\w+", orig_val.lower()) if t not in _STOPWORDS}
     sim_tokens = {t for t in re.findall(r"\w+", sim_val.lower()) if t not in _STOPWORDS}
     return len(orig_tokens & sim_tokens) / len(orig_tokens) if orig_tokens else np.nan
 
@@ -76,27 +55,23 @@ def compute_profile_recalls(
         for field in LEISURE_FIELDS:
             r = _token_recall(sim.get(field, "Unknown"), orig.get(field, "Unknown"))
             if not np.isnan(r):
-                rows.append(
-                    {
-                        "param_h": row["param_h"],
-                        "param_c": row["param_c"],
-                        "field": field,
-                        "field_type": "leisure",
-                        "recall": r,
-                    }
-                )
+                rows.append({
+                    "param_h": row["param_h"],
+                    "param_c": row["param_c"],
+                    "field": field,
+                    "field_type": "leisure",
+                    "recall": r,
+                })
         for field in MEDICAL_FIELDS:
             r = _token_recall(sim.get(field, "Unknown"), orig.get(field, "Unknown"))
             if not np.isnan(r):
-                rows.append(
-                    {
-                        "param_h": row["param_h"],
-                        "param_c": row["param_c"],
-                        "field": field,
-                        "field_type": "medical",
-                        "recall": r,
-                    }
-                )
+                rows.append({
+                    "param_h": row["param_h"],
+                    "param_c": row["param_c"],
+                    "field": field,
+                    "field_type": "medical",
+                    "recall": r,
+                })
 
     return pd.DataFrame(rows)
 
@@ -125,27 +100,23 @@ def compute_persona_recalls(
         for field in LEISURE_FIELDS:
             r = _token_recall(sim.get(field, "Unknown"), orig.get(field, "Unknown"))
             if not np.isnan(r):
-                rows.append(
-                    {
-                        "simulator": row["simulator"],
-                        "persona": row["persona"],
-                        "field": field,
-                        "field_type": "leisure",
-                        "recall": r,
-                    }
-                )
+                rows.append({
+                    "simulator": row["simulator"],
+                    "persona": row["persona"],
+                    "field": field,
+                    "field_type": "leisure",
+                    "recall": r,
+                })
         for field in MEDICAL_FIELDS:
             r = _token_recall(sim.get(field, "Unknown"), orig.get(field, "Unknown"))
             if not np.isnan(r):
-                rows.append(
-                    {
-                        "simulator": row["simulator"],
-                        "persona": row["persona"],
-                        "field": field,
-                        "field_type": "medical",
-                        "recall": r,
-                    }
-                )
+                rows.append({
+                    "simulator": row["simulator"],
+                    "persona": row["persona"],
+                    "field": field,
+                    "field_type": "medical",
+                    "recall": r,
+                })
     return pd.DataFrame(rows)
 
 
@@ -174,9 +145,7 @@ def plot_information_handling_comparison(
     sems = recall_df.groupby(["simulator", "persona", "field_type"])["recall"].sem()
     stats = pd.DataFrame({"mean": means, "sem": sems}).reset_index()
 
-    default_stats = stats[stats["persona"] == "Default"].set_index(
-        ["simulator", "field_type"]
-    )
+    default_stats = stats[stats["persona"] == "Default"].set_index(["simulator", "field_type"])
 
     delta_rows = []
     for _, row in stats[stats["persona"].isin(extreme_personas)].iterrows():
@@ -184,15 +153,13 @@ def plot_information_handling_comparison(
         if key not in default_stats.index:
             continue
         d = default_stats.loc[key]
-        delta_rows.append(
-            {
-                "simulator": row["simulator"],
-                "persona": row["persona"],
-                "field_type": row["field_type"],
-                "delta": row["mean"] - d["mean"],
-                "delta_sem": np.sqrt(row["sem"] ** 2 + d["sem"] ** 2),
-            }
-        )
+        delta_rows.append({
+            "simulator": row["simulator"],
+            "persona": row["persona"],
+            "field_type": row["field_type"],
+            "delta": row["mean"] - d["mean"],
+            "delta_sem": np.sqrt(row["sem"] ** 2 + d["sem"] ** 2),
+        })
     deltas = pd.DataFrame(delta_rows)
     print(deltas)
 
@@ -213,14 +180,8 @@ def plot_information_handling_comparison(
 
         for ft_i, field_type in enumerate(field_types):
             sub_ft = sub[sub["field_type"] == field_type].set_index("simulator")
-            vals = [
-                sub_ft.loc[s, "delta"] if s in sub_ft.index else np.nan
-                for s in simulator_order
-            ]
-            errs = [
-                sub_ft.loc[s, "delta_sem"] if s in sub_ft.index else np.nan
-                for s in simulator_order
-            ]
+            vals = [sub_ft.loc[s, "delta"] if s in sub_ft.index else np.nan for s in simulator_order]
+            errs = [sub_ft.loc[s, "delta_sem"] if s in sub_ft.index else np.nan for s in simulator_order]
             ax.bar(
                 x + (ft_i - 0.5) * width,
                 vals,
@@ -242,12 +203,8 @@ def plot_information_handling_comparison(
             ax.set_ylabel("Δ Token recall vs. Default")
 
     legend_handles = [
-        mpatches.Patch(
-            facecolor=field_colors[ft],
-            label=field_labels[ft],
-            edgecolor="black",
-            linewidth=0.4,
-        )
+        mpatches.Patch(facecolor=field_colors[ft], label=field_labels[ft],
+                       edgecolor="black", linewidth=0.4)
         for ft in field_types
     ]
     axes[-1].legend(
@@ -287,9 +244,7 @@ def plot_information_handling(
     c_sems = medical.groupby("param_c")["recall"].sem().reindex(c_levels).values
 
     color = PATIENT_TYPE_PALETTE.get("PatientsWithPersonality (Ours)", "#888888")
-    bar_kwargs = dict(
-        color=color, alpha=0.85, edgecolor="black", linewidth=0.7, capsize=4
-    )
+    bar_kwargs = dict(color=color, alpha=0.85, edgecolor="black", linewidth=0.7, capsize=4)
 
     fig, axes = plt.subplots(1, 2, figsize=figure_size)
 

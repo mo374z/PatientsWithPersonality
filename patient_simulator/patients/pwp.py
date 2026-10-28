@@ -1,7 +1,9 @@
+import asyncio
+import hashlib
 import json
 import os
 import random
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
 import pydantic
 
@@ -20,7 +22,9 @@ from patient_simulator.prompts.patient_prompts import (
     PWP_O,
     PWP_O_META,
     PWP_E_META,
-    PWP_CLASS,
+    PWP_CLASS_FORM,
+    PWP_REGISTER,
+    PWP_FORM,
 )
 
 PERSONAL_FIELDS = [
@@ -47,10 +51,92 @@ MEDICAL_FIELDS = [
 ]
 
 
+PHRASE_SAMPLING = {"temperature": 0.3, "max_tokens": 64, "stop": ["</phrase>"]}
+
+_PHRASE_CACHE: dict[str, str] = {}
+
+
+async def generate_phrase(llm: LLM, prompt: str, attempts: int) -> str:
+    """Rewrite one case value into a patient-facing phrase, memoised on the prompt.
+
+    The rewrite depends only on the field value, so the same value costs one call
+    however many personas or prompt candidates are evaluated against it.
+    """
+    if prompt in _PHRASE_CACHE:
+        return _PHRASE_CACHE[prompt]
+
+    for _ in range(attempts):
+        response = await llm.generate_response(
+            prompt=[{"role": "user", "content": prompt}],
+            sampling_kwargs=PHRASE_SAMPLING,
+        )
+        text = (
+            response["response"].split("<phrase>")[-1].replace("</phrase>", "").strip()
+        )
+        if 1 <= len(text.split()) <= 10:
+            break
+
+    _PHRASE_CACHE[prompt] = text
+    return text
+
+
+def downplay_prompt(leisure_info: str) -> str:
+    return PWP_H_DOWNPLAY.format(leisure_info=leisure_info)
+
+
+def fuzzy_prompt(field: str, medical_info: str) -> str:
+    return PWP_C_FUZZY.format(medical_info=f"{field}: '{medical_info.strip()}'")
+
+
+def case_phrase_prompts(case: dict[str, Any]) -> dict[str, int]:
+    """Every phrase rewrite a case needs, mapped to its retry budget.
+
+    The rewrites depend only on the case values, never on the HEXACO parametrisation,
+    so they can be generated once per case and replayed into the memo cache.
+    """
+    prompts = {
+        downplay_prompt(case[field]): 3
+        for field in LEISURE_FIELDS
+        if case[field] != "Unknown"
+    }
+    prompts.update(
+        {
+            fuzzy_prompt(field, value): 1
+            for field in MEDICAL_FIELDS
+            if case[field] != "Unknown"
+            for value in case[field].split(";")
+        }
+    )
+    return prompts
+
+
+async def precompute_case_phrases(llm: LLM, case: dict[str, Any]) -> dict[str, str]:
+    """Generate a case's phrase rewrites concurrently, as a prompt to phrase mapping."""
+    prompts = case_phrase_prompts(case)
+    phrases = await asyncio.gather(
+        *(
+            generate_phrase(llm=llm, prompt=prompt, attempts=attempts)
+            for prompt, attempts in prompts.items()
+        )
+    )
+    return dict(zip(prompts, phrases))
+
+
+def seed_phrase_cache(phrases: dict[str, str]) -> None:
+    _PHRASE_CACHE.update(phrases)
+
+
 class StringFields(pydantic.BaseModel):
     """Schema for a list of strings."""
 
     fields: list[str]
+
+
+class QuestionAnalysis(pydantic.BaseModel):
+    """Relevant case fields plus the conversational form of the doctor's turn."""
+
+    fields: list[str]
+    form: Literal["polar", "open", "statement"]
 
 
 class PatientsWithPersonality(BasePatient):
@@ -67,6 +153,8 @@ class PatientsWithPersonality(BasePatient):
         o: int,
         llm: LLM,
         level: str,
+        register: str,
+        answer_form: float,
         meta_llm: LLM | None = None,
         dynamic_case_description: bool = True,
         verbosity: int = 0,
@@ -85,6 +173,27 @@ class PatientsWithPersonality(BasePatient):
         self.o = o
         self.meta_llm = meta_llm if meta_llm is not None else llm
         self.level = level
+        if register not in PWP_REGISTER:
+            raise ValueError(
+                f"register must be one of {sorted(PWP_REGISTER)}, got {register!r}"
+            )
+        self.register = register
+        if not 0.0 <= float(answer_form) <= 1.0:
+            raise ValueError(
+                f"answer_form must be a rate in [0, 1], got {answer_form!r}"
+            )
+        self.answer_form = float(answer_form)
+        self._form_rng = random.Random(
+            int(
+                hashlib.md5(
+                    json.dumps(
+                        self.case_description, sort_keys=True, default=str
+                    ).encode()
+                ).hexdigest()[:8],
+                16,
+            )
+        )
+        self.last_question_form = "open"
         self.dynamic_case_description = dynamic_case_description
         self.verbosity = verbosity
         self.base_case_description = dict(self.case_description)
@@ -224,6 +333,18 @@ class PatientsWithPersonality(BasePatient):
             ]
         )
 
+    def build_role_inputs(self) -> str:
+        """The personal and HEXACO text a latent role is generated from."""
+        return "\n".join(
+            [
+                "Personal Information:",
+                self._build_personal_information_text(),
+                "",
+                "HEXACO Personality:",
+                self._build_hexaco_personality_text(),
+            ]
+        )
+
     async def _generate_latent_role_description(self) -> str:
         prompt = PWP_LATENT_ROLE.format(
             personal_information=self._build_personal_information_text(),
@@ -249,31 +370,11 @@ class PatientsWithPersonality(BasePatient):
             if self.case_description[field] == "Unknown":
                 downplayed_fields[field] = "Unknown"
             else:
-                retries = 3
-                while retries > 0:
-                    prompt = PWP_H_DOWNPLAY.format(
-                        leisure_info=self.case_description[field]
-                    )
-
-                    response = await self.meta_llm.generate_response(
-                        prompt=[{"role": "user", "content": prompt}],
-                        sampling_kwargs={
-                            "temperature": 0.3,
-                            "max_tokens": 64,
-                            "stop": ["</phrase>"],
-                        },
-                    )
-                    retries -= 1
-                    text = (
-                        response["response"]
-                        .split("<phrase>")[-1]
-                        .replace("</phrase>", "")
-                        .strip()
-                    )
-                    if 1 <= len(text.split(" ")) <= 10:
-                        break
-
-                downplayed_fields[field] = text
+                downplayed_fields[field] = await generate_phrase(
+                    llm=self.meta_llm,
+                    prompt=downplay_prompt(self.case_description[field]),
+                    attempts=3,
+                )
 
         if self.verbosity >= 1:
             print(f"[INIT] Generated downplayed leisure fields: {downplayed_fields}")
@@ -321,24 +422,14 @@ class PatientsWithPersonality(BasePatient):
             if self.case_description[field] == "Unknown":
                 fuzzy_med_info[field] = ["Unknown"]
             else:
-                _values = []
-                for value in self.case_description[field].split(";"):
-                    medical_info = f"{field}: '{value.strip()}'"
-
-                    prompt = PWP_C_FUZZY.format(medical_info=medical_info)
-
-                    response = await self.meta_llm.generate_response(
-                        prompt=[{"role": "user", "content": prompt}],
-                        sampling_kwargs={
-                            "temperature": 0.3,
-                            "max_tokens": 64,
-                            "stop": ["</phrase>"],
-                        },
+                fuzzy_med_info[field] = [
+                    await generate_phrase(
+                        llm=self.meta_llm,
+                        prompt=fuzzy_prompt(field, value),
+                        attempts=1,
                     )
-
-                    text = response["response"].split("<phrase>")[-1].strip()
-                    _values.append(text)
-                fuzzy_med_info[field] = _values
+                    for value in self.case_description[field].split(";")
+                ]
 
         if self.verbosity >= 1:
             print(f"[INIT] Generated fuzzy medical history: {fuzzy_med_info}")
@@ -381,6 +472,12 @@ class PatientsWithPersonality(BasePatient):
                         self.medical_info_mask[index]
                     ]
 
+    def _build_style_directives(self) -> str:
+        directives = [PWP_REGISTER[self.register]]
+        if self._form_rng.random() < self.answer_form:
+            directives.append(PWP_FORM[self.last_question_form])
+        return "".join(d for d in directives if d)
+
     def _build_system_prompt(self) -> str:
         return PWP_SYS.format(
             latent_role=self.latent_role_description,
@@ -390,6 +487,7 @@ class PatientsWithPersonality(BasePatient):
                     for field in self.case_description
                 ]
             ),
+            style_directives=self._build_style_directives(),
         )
 
     async def _classify_relevant_fields(self, question: str) -> list[str]:
@@ -402,22 +500,23 @@ class PatientsWithPersonality(BasePatient):
         else:
             return []
 
-        prompt = PWP_CLASS.format(
+        prompt = PWP_CLASS_FORM.format(
             available_fields=", ".join(available_fields), question=question
         )
 
         response = await self.meta_llm.generate_response(
             prompt=prompt,
-            outlines_class=StringFields,
+            outlines_class=QuestionAnalysis,
         )
         structured_response = response["response"]
-        if not isinstance(structured_response, StringFields):
+        if not isinstance(structured_response, QuestionAnalysis):
             raise TypeError(
-                "Expected StringFields from structured response, got "
+                "Expected QuestionAnalysis from structured response, got "
                 f"{type(structured_response).__name__} with content: {structured_response}"
             )
         response = structured_response
 
+        self.last_question_form = response.form
         relevant_fields = response.fields
 
         valid_fields = [field for field in relevant_fields if field in available_fields]
@@ -504,7 +603,8 @@ class PatientsWithPersonality(BasePatient):
         if short:
             return "PatientsWithPersonality"
 
-        if self.dynamic_case_description:
-            return f"PatientsWithPersonality_H{self.h}_E{self.e}_X{self.x}_A{self.a}_C{self.c}_O{self.o}_L{self.level}"
-        else:
-            return f"PatientsWithPersonality_Static_H{self.h}_E{self.e}_X{self.x}_A{self.a}_C{self.c}_O{self.o}_L{self.level}"
+        static = "" if self.dynamic_case_description else "Static_"
+        return (
+            f"PatientsWithPersonality_{static}H{self.h}_E{self.e}_X{self.x}"
+            f"_A{self.a}_C{self.c}_O{self.o}_L{self.level}"
+        )

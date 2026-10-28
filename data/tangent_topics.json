@@ -1,0 +1,82 @@
+[
+  [6, 21, [
+    "school exams",
+    "homework pressure",
+    "conflicts with parents",
+    "bullying at school",
+    "sports injuries",
+    "peer pressure",
+    "sleep problems from late gaming",
+    "fear of missing school"
+  ]],
+  [18, 30, [
+    "university exams",
+    "unfinished degree",
+    "living in a shared apartment",
+    "part-time job stress",
+    "financial dependence on parents",
+    "recent breakup",
+    "irregular sleep schedule",
+    "uncertainty about the future"
+  ]],
+  [25, 40, [
+    "long working hours",
+    "early career pressure",
+    "job insecurity",
+    "rent increases",
+    "planning a family",
+    "relationship stress",
+    "lack of time for exercise",
+    "chronic tiredness"
+  ]],
+  [35, 50, [
+    "raising young children",
+    "childcare organization",
+    "work–family imbalance",
+    "career stagnation",
+    "financial responsibilities",
+    "marital conflict",
+    "persistent stress",
+    "neglecting personal health"
+  ]],
+  [45, 60, [
+    "teenage children problems",
+    "caring for aging parents",
+    "divorce",
+    "physical strain at work",
+    "job dissatisfaction",
+    "worsening sleep quality",
+    "weight gain",
+    "reduced physical fitness"
+  ]],
+  [55, 70, [
+    "approaching retirement",
+    "financial retirement planning",
+    "chronic work fatigue",
+    "new chronic conditions",
+    "frequent medical checkups",
+    "loss of close friends",
+    "reduced activity levels",
+    "medication management"
+  ]],
+  [65, 85, [
+    "retirement adjustment",
+    "loneliness",
+    "loss of spouse",
+    "grandchildren visits",
+    "mobility limitations",
+    "fear of falling",
+    "memory lapses",
+    "daily routine changes"
+  ]],
+  [75, 999, [
+    "living alone",
+    "loss of independence",
+    "dependence on caregivers",
+    "transportation difficulties",
+    "confusion about medications",
+    "social isolation",
+    "fear of hospitalization",
+    "being a burden to family"
+  ]]
+]

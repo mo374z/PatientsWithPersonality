@@ -259,6 +259,56 @@ async def extract_patient_profile_from_text(
     return profile.model_dump()
 
 
+class AtomicFacts(pydantic.BaseModel):
+    """Atomic patient facts as a list of single, checkable phrases."""
+
+    facts: list[str] = pydantic.Field(
+        default_factory=list,
+        description="Atomic fact phrases, one per input statement, same order.",
+    )
+
+
+ATOMIZE_STATEMENTS_PROMPT = """Convert each first-person patient statement into a short atomic fact phrase.
+
+Rules:
+- Drop pronouns (I, my, me), articles, and filler verbs.
+- Preserve all clinical modifiers: duration, severity, location, frequency.
+- Preserve negations (e.g., "I have not had chest pain" -> "no chest pain").
+- One output per input, in the same order.
+
+Examples:
+- "I have been having double vision." -> "double vision"
+- "This has been going on for about 1 month." -> "duration: 1 month"
+- "I do not smoke." -> "non-smoker"
+- "I have not had any chest pain." -> "no chest pain"
+- "My upper arms feel weak when I try to brush my hair." -> "upper-arm weakness when brushing hair"
+- "I am a 35-year-old woman." -> "35-year-old woman"
+
+Statements (preserve order):
+{statements}
+
+Return atomic fact phrases as a list of strings with the same length as the input."""
+
+
+async def atomize_patient_statements(statements: list[str], llm: LLM) -> list[str]:
+    """Map first-person patient statements to short atomic fact phrases (1:1, order-preserving)."""
+    if not statements:
+        return []
+
+    numbered = "\n".join(f"{i + 1}. {s}" for i, s in enumerate(statements))
+    response = await llm.generate_response(
+        prompt=ATOMIZE_STATEMENTS_PROMPT.format(statements=numbered),
+        outlines_class=AtomicFacts,
+    )
+    parsed = _parse_patient_profile_response(response["response"], AtomicFacts)
+    facts = [str(f).strip() for f in parsed.facts]
+    if len(facts) != len(statements):
+        raise ValueError(
+            f"Atomized output length mismatch: expected {len(statements)}, got {len(facts)}"
+        )
+    return facts
+
+
 async def extract_patient_profile_from_case_description(
     case_description: str,
     llm: LLM,

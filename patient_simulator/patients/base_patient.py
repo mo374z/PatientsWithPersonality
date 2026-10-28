@@ -22,6 +22,30 @@ def _normalize_case_description(
     return case_description
 
 
+def pair_doctor_patient(
+    turns: list[tuple[str, str]],
+) -> list[tuple[str, str]]:
+    """Pair every patient turn with the doctor turn preceding it."""
+    pairs: list[tuple[str, str]] = []
+    i = 0
+    n = len(turns)
+    while i < n:
+        speaker, text = turns[i]
+        if speaker == "DOCTOR":
+            j = i + 1
+            if j < n and turns[j][0] == "PATIENT":
+                pairs.append((text, turns[j][1]))
+                i = j + 1
+            else:
+                i += 1
+        elif speaker == "PATIENT":
+            pairs.append(("", text))
+            i += 1
+        else:
+            raise ValueError(f"Unexpected speaker: {speaker}")
+    return pairs
+
+
 class BasePatient:
     """Superclass for all Patient simulators.
 
@@ -52,29 +76,7 @@ class BasePatient:
     ) -> pd.DataFrame:
         """Run teacher-forcing simulation using a given conversation."""
 
-        def _pair_doctor_patient(
-            local_turns: list[tuple[str, str]],
-        ) -> list[tuple[str, str]]:
-            pairs: list[tuple[str, str]] = []
-            i = 0
-            n = len(local_turns)
-            while i < n:
-                speaker, text = local_turns[i]
-                if speaker == "DOCTOR":
-                    j = i + 1
-                    if j < n and local_turns[j][0] == "PATIENT":
-                        pairs.append((text, local_turns[j][1]))
-                        i = j + 1
-                    else:
-                        i += 1
-                elif speaker == "PATIENT":
-                    pairs.append(("", text))
-                    i += 1
-                else:
-                    raise ValueError(f"Unexpected speaker: {speaker}")
-            return pairs
-
-        pairs = _pair_doctor_patient(conv)
+        pairs = pair_doctor_patient(conv)
         if limit is not None:
             pairs = pairs[:limit]
 
@@ -107,7 +109,11 @@ Return only the revised doctor response."""
             if aligned_response["response"] is None:
                 raise RuntimeError("LLM returned empty aligned doctor response")
 
-            return aligned_response["response"].strip()
+            aligned = aligned_response["response"].strip()
+            if not aligned:
+                raise RuntimeError("LLM returned blank aligned doctor response")
+
+            return aligned
 
         full_conv = {}
         for idx, (doctor_q, real_resp) in enumerate(pairs):

@@ -22,7 +22,7 @@ axes.grid             : False
 
 # ── Font ─────────────────────────────────────────────────────────────────────
 font.family           : sans-serif
-font.sans-serif       : Roboto
+font.sans-serif       : Roboto, Helvetica Neue, Arial, DejaVu Sans
 font.size             : 12
 
 axes.labelsize        : 12

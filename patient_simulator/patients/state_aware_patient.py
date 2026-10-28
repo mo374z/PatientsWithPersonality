@@ -15,6 +15,19 @@ from patient_simulator.prompts.patient_prompts import (
 )
 
 
+def _classifier_text(response: dict[str, Any]) -> str:
+    """Classifier output, empty when the model returned nothing (callers default)."""
+    return (response["response"] or "").strip()
+
+
+def _patient_text(response: dict[str, Any]) -> str:
+    """Patient turn unwrapped from its <response> tags; a blank turn is an error."""
+    text = response["response"]
+    if not text:
+        raise ValueError("StateAwarePatient LLM returned an empty response")
+    return text.split("<response>")[-1].replace("</response>", "").strip()
+
+
 class StateAwarePatient(BasePatient):
     """State Aware Patient Simulator (SAPS) with state tracking and memory bank (Liao et al., 2024)
 
@@ -63,7 +76,7 @@ class StateAwarePatient(BasePatient):
         )
 
         # Extract the category letter (A, B, C, D, or E)
-        category = response["response"].strip()
+        category = _classifier_text(response)
         for letter in ["A", "B", "C", "D", "E"]:
             if letter in category:
                 return letter
@@ -88,7 +101,7 @@ class StateAwarePatient(BasePatient):
             system_instruction=None,
         )
 
-        result = response["response"].strip()
+        result = _classifier_text(response)
 
         if (
             "[Ambiguous]" in result
@@ -121,7 +134,7 @@ class StateAwarePatient(BasePatient):
             system_instruction=None,
         )
 
-        return response["response"].strip()
+        return _classifier_text(response)
 
     async def _track_state(self, question: str) -> tuple[str, str]:
         """
@@ -208,14 +221,7 @@ class StateAwarePatient(BasePatient):
             },
         )
 
-        response_trimmed = (
-            response["response"]
-            .split("<response>")[-1]
-            .replace("</response>", "")
-            .strip()
-        )
-
-        return response_trimmed
+        return _patient_text(response)
 
     async def get_response(self, question: str) -> str:
         """
@@ -234,12 +240,7 @@ class StateAwarePatient(BasePatient):
                 },
             )
 
-            response_trimmed = (
-                response["response"]
-                .split("<response>")[-1]
-                .replace("</response>", "")
-                .strip()
-            )
+            response_trimmed = _patient_text(response)
 
             # Update both short_term_memory (for state tracking) and conversation_history (for parent class)
             self.short_term_memory.append(

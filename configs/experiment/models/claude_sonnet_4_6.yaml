@@ -1,4 +1,5 @@
 backend: APILLM
 name: claude-sonnet-4-6
+project: ${oc.env:GOOGLE_CLOUD_PROJECT,}
 generation_config:
   max_tokens: 4096

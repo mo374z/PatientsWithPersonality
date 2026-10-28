@@ -7,7 +7,6 @@ import json
 import re
 from pathlib import Path
 import gc
-import torch
 import logging
 import warnings
 import sys
@@ -24,8 +23,18 @@ from anthropic import InternalServerError as AnthropicInternalServerError
 from anthropic import APIConnectionError as AnthropicConnectionError
 from anthropic import APITimeoutError as AnthropicTimeoutError
 import pydantic
-import outlines
-from vllm import LLM as VLLMEngine, SamplingParams
+try:
+    import torch
+except ImportError:
+    torch = None
+try:
+    import outlines
+except ImportError:
+    outlines = None
+try:
+    from vllm import LLM as VLLMEngine, SamplingParams
+except ImportError:
+    VLLMEngine = SamplingParams = None
 from google.api_core import exceptions as google_exceptions
 
 
@@ -34,7 +43,7 @@ def _suppress_stderr():
     """Context manager to suppress stderr output."""
     stderr = sys.stderr
     try:
-        sys.stderr = open(os.devnull, "w")
+        sys.stderr = open(os.devnull, 'w')
         yield
     finally:
         sys.stderr.close()
@@ -49,7 +58,6 @@ class ConversationMessage(TypedDict):
 
 
 PromptType = Union[str, List[ConversationMessage]]
-
 
 def _estimate_tokens(prompt: PromptType) -> int:
     """Word-count based estimator for evaluation."""
@@ -66,6 +74,29 @@ def _estimate_tokens(prompt: PromptType) -> int:
         return total
 
     return 0
+
+
+async def _retry_async(
+    operation,
+    retryable_exceptions,
+    max_retries: int,
+    initial_delay: float,
+    max_delay: Optional[float] = None,
+):
+    for attempt in range(max_retries):
+        try:
+            return await operation()
+        except retryable_exceptions as e:
+            if attempt == max_retries - 1:
+                raise
+            delay = initial_delay * (2**attempt)
+            if max_delay is not None:
+                delay = min(delay, max_delay)
+            print(
+                f"Transient error {type(e).__name__}. Retrying in {delay:.1f}s (attempt {attempt + 1}/{max_retries})..."
+            )
+            await asyncio.sleep(delay)
+    raise RuntimeError("Max retries exceeded")
 
 
 class LLM(ABC):
@@ -170,6 +201,10 @@ class LLM(ABC):
         pass
 
 
+class EmptyCompletionError(RuntimeError):
+    """Model returned no text part — e.g. the thinking budget consumed the whole response."""
+
+
 class VLLMModelConflictError(RuntimeError):
     pass
 
@@ -190,6 +225,8 @@ class APILLM(LLM):
         httpx.NetworkError,
         httpx.TimeoutException,
     )
+
+    _RETRYABLE_RESPONSE_EXCEPTIONS = (EmptyCompletionError,)
 
     _RETRYABLE_ANTHROPIC_EXCEPTIONS = (
         AnthropicRateLimitError,
@@ -258,9 +295,7 @@ class APILLM(LLM):
         else:
             client_kwargs: Dict[str, Any] = {"vertexai": vertexai}
             if api_version is not None:
-                client_kwargs["http_options"] = types.HttpOptions(
-                    api_version=api_version
-                )
+                client_kwargs["http_options"] = types.HttpOptions(api_version=api_version)
             if project is not None:
                 client_kwargs["project"] = project
             if location is not None:
@@ -280,9 +315,7 @@ class APILLM(LLM):
         """Generate a response using Google Gemini API with retry logic."""
 
         if sampling_kwargs and self.verbosity >= 1:
-            print(
-                "NOTE: sampling_kwargs are not natively supported by Google Gemini API and will be ignored in this implementation."
-            )
+            print("NOTE: sampling_kwargs are not natively supported by Google Gemini API and will be ignored in this implementation.")
 
         cache_key: Optional[str] = None
         if use_cache:
@@ -300,53 +333,31 @@ class APILLM(LLM):
                 if isinstance(prompt, list)
                 else [{"role": "user", "content": prompt}]
             )
-            kwargs: Dict[str, Any] = {
-                "model": self.model,
-                "messages": messages,
-                **self.generation_config,
-            }
+            kwargs: Dict[str, Any] = {"model": self.model, "messages": messages, **self.generation_config}
             if "max_tokens" not in kwargs:
-                raise ValueError(
-                    "generation_config must include 'max_tokens' for Claude models"
-                )
+                raise ValueError("generation_config must include 'max_tokens' for Claude models")
             if system_instruction is not None:
                 kwargs["system"] = system_instruction
-            if outlines_class is not None:
-                kwargs["tools"] = [
-                    {
-                        "name": "structured_response",
-                        "description": "Return the response in the required structured format.",
-                        "input_schema": outlines_class.model_json_schema(),
-                    }
-                ]
-                kwargs["tool_choice"] = {"type": "tool", "name": "structured_response"}
-            for attempt in range(self.max_retries):
-                try:
+            async def _attempt():
+                if outlines_class is not None:
+                    response = await self.client.messages.parse(**kwargs, output_format=outlines_class)
+                    if response.parsed_output is None:
+                        raise ValueError(f"Claude returned no structured output (stop_reason={response.stop_reason})")
+                    response_value = response.parsed_output
+                else:
                     response = await self.client.messages.create(**kwargs)
-                    if outlines_class is not None:
-                        tool_block = next(
-                            b for b in response.content if b.type == "tool_use"
-                        )
-                        response_value = outlines_class.model_validate(tool_block.input)
-                    else:
-                        response_value = response.content[0].text
-                    result = {
-                        "response": response_value,
-                        "prompt_token_count": response.usage.input_tokens,
-                        "output_token_count": response.usage.output_tokens,
-                    }
-                    if use_cache and cache_key is not None:
-                        self._cache_store(cache_key, result)
-                    return result
-                except self._RETRYABLE_ANTHROPIC_EXCEPTIONS as e:
-                    if attempt == self.max_retries - 1:
-                        raise
-                    delay = self.initial_delay * (2**attempt)
-                    print(
-                        f"Transient error {type(e).__name__}. Retrying in {delay:.1f}s (attempt {attempt + 1}/{self.max_retries})..."
-                    )
-                    await asyncio.sleep(delay)
-            raise RuntimeError("Max retries exceeded")
+                    response_value = next(b.text for b in response.content if b.type == "text")
+                result = {"response": response_value, "prompt_token_count": response.usage.input_tokens, "output_token_count": response.usage.output_tokens}
+                if use_cache and cache_key is not None:
+                    self._cache_store(cache_key, result)
+                return result
+
+            return await _retry_async(
+                _attempt,
+                self._RETRYABLE_ANTHROPIC_EXCEPTIONS,
+                self.max_retries,
+                self.initial_delay,
+            )
 
         if isinstance(prompt, list):
             contents = [
@@ -375,46 +386,42 @@ class APILLM(LLM):
         config_kwargs = self._normalize_generate_config(config_kwargs)
         generate_config = types.GenerateContentConfig(**config_kwargs)
 
-        for attempt in range(self.max_retries):
-            try:
-                response = await self.client.aio.models.generate_content(
-                    model=self.model,
-                    contents=contents,
-                    config=generate_config,
-                )
-                if outlines_class is None:
-                    response_text = response.text
+        async def _attempt():
+            response = await self.client.aio.models.generate_content(
+                model=self.model,
+                contents=contents,
+                config=generate_config,
+            )
+            if outlines_class is None:
+                response_text = response.text
+                if response_text is None:
+                    raise EmptyCompletionError(
+                        f"{self.model} returned no text part "
+                        f"(finish_reason={getattr(response.candidates[0], 'finish_reason', None) if response.candidates else None})"
+                    )
+            else:
+                if response.parsed is not None:
+                    response_text = outlines_class.model_validate(response.parsed)
                 else:
-                    if response.parsed is not None:
-                        response_text = outlines_class.model_validate(response.parsed)
-                    else:
-                        response_text = outlines_class.model_validate_json(
-                            response.text
-                        )
+                    response_text = outlines_class.model_validate_json(response.text)
 
-                result = {
-                    "response": response_text,
-                    "prompt_token_count": _estimate_tokens(prompt),
-                    "output_token_count": _estimate_tokens(response_text),
-                }
-                if use_cache and cache_key is not None:
-                    self._cache_store(cache_key, result)
-                return result
-            except (
-                *self._RETRYABLE_GOOGLE_EXCEPTIONS,
-                *self._RETRYABLE_TRANSPORT_EXCEPTIONS,
-            ) as e:
-                if attempt == self.max_retries - 1:
-                    raise
-                delay = self.initial_delay * (2**attempt)
-                print(
-                    f"Transient error {type(e).__name__}. Retrying in {delay:.1f}s (attempt {attempt + 1}/{self.max_retries})..."
-                )
-                await asyncio.sleep(delay)
-            except google_exceptions.GoogleAPICallError:
-                raise
+            result = {
+                "response": response_text,
+                "prompt_token_count": _estimate_tokens(prompt),
+                "output_token_count": _estimate_tokens(response_text),
+            }
+            if use_cache and cache_key is not None:
+                self._cache_store(cache_key, result)
+            return result
 
-        raise RuntimeError("Max retries exceeded")
+        return await _retry_async(
+            _attempt,
+            self._RETRYABLE_GOOGLE_EXCEPTIONS
+            + self._RETRYABLE_TRANSPORT_EXCEPTIONS
+            + self._RETRYABLE_RESPONSE_EXCEPTIONS,
+            self.max_retries,
+            self.initial_delay,
+        )
 
 
 class OpenRouterLLM(LLM):
@@ -453,12 +460,8 @@ class OpenRouterLLM(LLM):
         return schema
 
     @staticmethod
-    def _build_response_format(
-        outlines_class: type[pydantic.BaseModel],
-    ) -> Dict[str, Any]:
-        schema = OpenRouterLLM._enforce_strict_schema(
-            outlines_class.model_json_schema()
-        )
+    def _build_response_format(outlines_class: type[pydantic.BaseModel]) -> Dict[str, Any]:
+        schema = OpenRouterLLM._enforce_strict_schema(outlines_class.model_json_schema())
         return {
             "type": "json_schema",
             "json_schema": {
@@ -521,7 +524,9 @@ class OpenRouterLLM(LLM):
 
         response_text = cls._extract_message_text(message)
         if not response_text or not response_text.strip():
-            raise ValueError(f"Empty structured content. Raw message: {message!r}")
+            raise ValueError(
+                f"Empty structured content. Raw message: {message!r}"
+            )
 
         candidates: List[str] = []
         seen: set[str] = set()
@@ -530,7 +535,9 @@ class OpenRouterLLM(LLM):
             cls._strip_code_fences(response_text),
             cls._strip_reasoning_tags(response_text),
             cls._strip_code_fences(cls._strip_reasoning_tags(response_text)),
-            cls._extract_first_json_object(cls._strip_reasoning_tags(response_text)),
+            cls._extract_first_json_object(
+                cls._strip_reasoning_tags(response_text)
+            ),
         ):
             if variant and variant.strip() and variant not in seen:
                 seen.add(variant)
@@ -618,14 +625,12 @@ class OpenRouterLLM(LLM):
             else:
                 messages.insert(0, {"role": "system", "content": schema_instruction})
             payload["messages"] = messages
-
+        
         async with httpx.AsyncClient(timeout=120.0) as http_client:
             for attempt in range(self.max_retries):
                 try:
                     if self.verbosity >= 1:
-                        print(
-                            f"Sending request to OpenRouter with model {self.model}..."
-                        )
+                        print(f"Sending request to OpenRouter with model {self.model}...")
 
                     response = await http_client.post(
                         f"{self.base_url}/chat/completions",
@@ -669,9 +674,7 @@ class OpenRouterLLM(LLM):
 
                 except httpx.HTTPStatusError as e:
                     if attempt == self.max_retries - 1:
-                        raise RuntimeError(
-                            f"OpenRouter API request failed: {e.response.text}"
-                        )
+                        raise RuntimeError(f"OpenRouter API request failed: {e.response.text}")
                     delay = self.initial_delay * (2**attempt)
                     print(
                         f"HTTP error {e.response.status_code}. Retrying in {delay:.1f}s (attempt {attempt + 1}/{self.max_retries})..."
@@ -685,9 +688,7 @@ class OpenRouterLLM(LLM):
                     TypeError,
                 ) as e:
                     if attempt == self.max_retries - 1:
-                        raise RuntimeError(
-                            f"OpenRouter structured parsing failed: {str(e)}"
-                        )
+                        raise RuntimeError(f"OpenRouter structured parsing failed: {str(e)}")
                     delay = self.initial_delay * (2**attempt)
                     print(
                         f"Parsing error {type(e).__name__}: {str(e)}. Retrying in {delay:.1f}s (attempt {attempt + 1}/{self.max_retries})..."
@@ -703,16 +704,16 @@ class OpenRouterLLM(LLM):
                     await asyncio.sleep(delay)
 
         raise RuntimeError("Max retries exceeded")
-
+    
     async def __aenter__(self):
         return self
-
+    
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         return None
 
     def close(self):
         return None
-
+    
     def __del__(self):
         self.close()
 
@@ -721,9 +722,22 @@ class VLLM(LLM):
     """LLM implementation using vLLM for local inference."""
 
     _DEFAULT_CACHE_DIR = Path.home() / "models" / "hf"
-    _active_instance: Optional["VLLM"] = None
+    _active_instance: Optional['VLLM'] = None
     _active_config: Optional[Dict[str, Any]] = None
     _active_model_path: Optional[str] = None
+
+    _RETRYABLE_REMOTE_EXCEPTIONS = (
+        google_exceptions.ServiceUnavailable,
+        google_exceptions.FailedPrecondition,
+        google_exceptions.DeadlineExceeded,
+        google_exceptions.InternalServerError,
+        google_exceptions.ResourceExhausted,
+        google_exceptions.TooManyRequests,
+        google_exceptions.Aborted,
+        httpx.NetworkError,
+        httpx.TimeoutException,
+    )
+    _REMOTE_MAX_DELAY = 60.0
 
     @staticmethod
     def _is_engine_startup_failure(error_text: str) -> bool:
@@ -748,7 +762,10 @@ class VLLM(LLM):
         sampling_kwargs: Optional[Dict[str, Any]] = None,
         batch_size: Optional[int] = None,
         cache_dir: Optional[str] = None,
+        max_retries: int = 5,
+        initial_delay: float = 2.0,
         verbosity: int = 0,
+        pool_maxsize: int = 32,
         use_cache: bool = True,
     ):
         self.model = model
@@ -757,6 +774,8 @@ class VLLM(LLM):
         if batch_size is not None and int(batch_size) < 1:
             raise ValueError("batch_size must be >= 1 when provided")
         self.batch_size = int(batch_size) if batch_size is not None else None
+        self.max_retries = max_retries
+        self.initial_delay = initial_delay
         self.verbosity = verbosity
         self.remote = endpoint_id is not None
 
@@ -765,47 +784,48 @@ class VLLM(LLM):
 
             aiplatform.init(project=project, location=location)
             self.endpoint = aiplatform.Endpoint(endpoint_id)
+            self._install_pooled_session(pool_maxsize)
             self.engine = None
             self.cache_dir = None
             return
 
+        self._local_lock: asyncio.Lock | None = None
+        self._local_lock_loop: asyncio.AbstractEventLoop | None = None
         self.cache_dir = Path(cache_dir) if cache_dir else self._DEFAULT_CACHE_DIR
 
         if verbosity < 1:
             import os
-
             # Suppress vLLM's internal logging and progress bars
-            os.environ["VLLM_LOGGING_LEVEL"] = "ERROR"
-            os.environ["VLLM_CONFIGURE_LOGGING"] = "0"
-
+            os.environ['VLLM_LOGGING_LEVEL'] = 'ERROR'
+            os.environ['VLLM_CONFIGURE_LOGGING'] = '0'
+            
             # Suppress logging from various modules
-            logging.getLogger("vllm").setLevel(logging.ERROR)
-            logging.getLogger("transformers").setLevel(logging.ERROR)
-
+            logging.getLogger('vllm').setLevel(logging.ERROR)
+            logging.getLogger('transformers').setLevel(logging.ERROR)
+            
             # Suppress warnings from vLLM, transformers, and mistral_common
-            warnings.filterwarnings("ignore", category=UserWarning, module="vllm")
-            warnings.filterwarnings(
-                "ignore", category=UserWarning, module="transformers"
-            )
-            warnings.filterwarnings(
-                "ignore", category=FutureWarning, module="mistral_common"
-            )
-
+            warnings.filterwarnings('ignore', category=UserWarning, module='vllm')
+            warnings.filterwarnings('ignore', category=UserWarning, module='transformers')
+            warnings.filterwarnings('ignore', category=FutureWarning, module='mistral_common')
+        
         model_path = self._resolve_model_path(model)
-
+        
         engine_kwargs = engine_kwargs or {}
         engine_kwargs = {k: v for k, v in dict(engine_kwargs).items() if v is not None}
-
-        if verbosity < 1 and "disable_log_stats" not in engine_kwargs:
-            engine_kwargs["disable_log_stats"] = True
-
+        
+        if verbosity < 1 and 'disable_log_stats' not in engine_kwargs:
+            engine_kwargs['disable_log_stats'] = True
+        
         current_config = {
-            "model_path": model_path,
-            "engine_kwargs": engine_kwargs,
-            "cache_dir": str(self.cache_dir),
+            'model_path': model_path,
+            'engine_kwargs': engine_kwargs,
+            'cache_dir': str(self.cache_dir),
         }
 
-        if VLLM._active_instance is not None and VLLM._active_model_path == model_path:
+        if (
+            VLLM._active_instance is not None
+            and VLLM._active_model_path == model_path
+        ):
             print("Reusing existing vLLM engine with same model")
             self.engine = VLLM._active_instance.engine
         else:
@@ -813,6 +833,11 @@ class VLLM(LLM):
                 running_model = VLLM._active_model_path or "unknown"
                 raise VLLMModelConflictError(
                     f"another model named {running_model} is running please reinitialize the instance to replace it with your requested model"
+                )
+
+            if VLLMEngine is None:
+                raise ImportError(
+                    "vllm is not installed; the VLLM backend is unavailable in this environment"
                 )
 
             print(f"Loading LLM model: {model_path}...")
@@ -829,9 +854,7 @@ class VLLM(LLM):
                     ) from e
 
                 if self._is_engine_startup_failure(error_text):
-                    print(
-                        "vLLM engine startup failed, killing stale engine processes and retrying once..."
-                    )
+                    print("vLLM engine startup failed, killing stale engine processes and retrying once...")
                     self._kill_engine_processes()
                     gc.collect()
                     torch.cuda.empty_cache()
@@ -853,20 +876,19 @@ class VLLM(LLM):
         """Resolve model to local path, downloading from HuggingFace if needed."""
         if Path(model).exists():
             return str(Path(model).resolve())
-
+        
         if "/" in model:
             local_dir = self.cache_dir / model.replace("/", "__")
-
+            
             if local_dir.exists() and any(local_dir.iterdir()):
                 print(f"Using cached model from: {local_dir}")
                 return str(local_dir)
-
+            
             print(f"Downloading model {model} to {local_dir}...")
             local_dir.parent.mkdir(parents=True, exist_ok=True)
-
+            
             try:
                 from huggingface_hub import snapshot_download
-
                 snapshot_download(
                     repo_id=model,
                     local_dir=str(local_dir),
@@ -874,18 +896,16 @@ class VLLM(LLM):
                 )
                 return str(local_dir)
             except ImportError:
-                print(
-                    "Warning: huggingface_hub not installed. Using model ID directly."
-                )
+                print("Warning: huggingface_hub not installed. Using model ID directly.")
                 return model
-
+        
         return model
 
     def cleanup(self):
         """Release GPU memory by destroying the engine."""
         if getattr(self, "remote", False):
             return
-        if hasattr(self, "engine") and self.engine is not None:
+        if hasattr(self, 'engine') and self.engine is not None:
             del self.engine
             gc.collect()
             torch.cuda.empty_cache()
@@ -903,6 +923,7 @@ class VLLM(LLM):
     def _vllm_prompt_text(
         self, prompt: PromptType, system_instruction: Optional[str]
     ) -> str:
+
         text = ""
         if isinstance(prompt, list):
             for m in prompt:
@@ -938,11 +959,7 @@ class VLLM(LLM):
                         tid = tokenizer.convert_tokens_to_ids(stop_token)
                 else:
                     tid = tokenizer.convert_tokens_to_ids(stop_token)
-                if (
-                    isinstance(tid, int)
-                    and tid != tokenizer.unk_token_id
-                    and tid not in stop_token_ids
-                ):
+                if isinstance(tid, int) and tid != tokenizer.unk_token_id and tid not in stop_token_ids:
                     stop_token_ids.append(tid)
             except Exception:
                 pass
@@ -995,11 +1012,7 @@ class VLLM(LLM):
             # Fallback for list-like text often produced by local models.
             model_fields = getattr(outlines_class, "model_fields", {})
             if "fields" in model_fields:
-                items = [
-                    item.strip()
-                    for item in re.split(r"[,;\n]", cleaned)
-                    if item.strip()
-                ]
+                items = [item.strip() for item in re.split(r"[,;\n]", cleaned) if item.strip()]
                 return outlines_class.model_validate({"fields": items})
 
         raise TypeError(
@@ -1025,6 +1038,35 @@ class VLLM(LLM):
                 use_cache=use_cache,
             )
 
+        async with self._loop_local_lock():
+            return await self._local_generate_response(
+                prompt=prompt,
+                system_instruction=system_instruction,
+                sampling_kwargs=sampling_kwargs,
+                outlines_class=outlines_class,
+                use_cache=use_cache,
+            )
+
+    def _loop_local_lock(self) -> asyncio.Lock:
+        """Engine lock rebound to the running loop.
+
+        asyncio locks cannot be shared across event loops, and callers may drive
+        this engine from a fresh ``asyncio.run`` per batch.
+        """
+        loop = asyncio.get_running_loop()
+        if self._local_lock is None or self._local_lock_loop is not loop:
+            self._local_lock = asyncio.Lock()
+            self._local_lock_loop = loop
+        return self._local_lock
+
+    async def _local_generate_response(
+        self,
+        prompt: PromptType,
+        system_instruction: Optional[str] = None,
+        sampling_kwargs: Optional[Dict[str, Any]] = None,
+        outlines_class: Optional[type[pydantic.BaseModel]] = None,
+        use_cache: bool = True,
+    ) -> dict:
         sampling_kwargs = sampling_kwargs or {}
         cache_key: Optional[str] = None
         if use_cache:
@@ -1043,9 +1085,9 @@ class VLLM(LLM):
             if self.verbosity >= 1:
                 print("[PROMPT TEXT FOR OUTLINES]")
                 print(prompt_text)
-
+            
             merged_sampling_kwargs = self._prepare_sampling_params(sampling_kwargs)
-
+            
             def _generate():
                 ctx = _suppress_stderr() if self.verbosity < 1 else nullcontext()
                 with ctx:
@@ -1053,12 +1095,12 @@ class VLLM(LLM):
                     return outlines_model(
                         prompt_text,
                         output_type=outlines_class,
-                        sampling_params=SamplingParams(**merged_sampling_kwargs),
+                        sampling_params=SamplingParams(**merged_sampling_kwargs)
                     )
 
             raw_response = await asyncio.to_thread(_generate)
             response = self._coerce_structured_response(raw_response, outlines_class)
-
+            
             result = {
                 "response": response,
                 "prompt_token_count": _estimate_tokens(prompt),
@@ -1067,14 +1109,36 @@ class VLLM(LLM):
             if use_cache and cache_key is not None:
                 self._cache_store(cache_key, result)
             return result
-
+        
         results = await self.generate_batch(
-            [prompt], [system_instruction], sampling_kwargs
+            [prompt],
+            [system_instruction],
+            sampling_kwargs
         )
         result = results[0]
         if use_cache and cache_key is not None:
             self._cache_store(cache_key, result)
         return result
+
+    def _install_pooled_session(self, pool_maxsize: int) -> None:
+        """Mount a larger-pool HTTPAdapter on the endpoint's raw_predict session.
+
+        The aiplatform SDK's default AuthorizedSession caps pool_maxsize at 10, which
+        throttles concurrent raw_predict calls (urllib3 'Connection pool is full,
+        discarding connection'). Sizing the pool to the run's concurrency removes the
+        connection churn without changing any response.
+        """
+        from google.auth.transport.requests import AuthorizedSession
+        from google.cloud.aiplatform import constants
+        from requests.adapters import HTTPAdapter
+
+        creds = self.endpoint.credentials
+        creds._scopes = constants.base.DEFAULT_AUTHED_SCOPES
+        session = AuthorizedSession(creds)
+        adapter = HTTPAdapter(pool_connections=pool_maxsize, pool_maxsize=pool_maxsize)
+        session.mount("https://", adapter)
+        session.mount("http://", adapter)
+        self.endpoint.authorized_session = session
 
     async def _remote_generate_response(
         self,
@@ -1122,19 +1186,22 @@ class VLLM(LLM):
             else:
                 messages.insert(0, {"role": "system", "content": schema_instruction})
 
-        instance = {
-            "@requestFormat": "chatCompletions",
-            "messages": messages,
-            **merged_sampling_kwargs,
-        }
+        request_body = json.dumps(
+            {"model": self.model, "messages": messages, **merged_sampling_kwargs}
+        ).encode("utf-8")
 
-        response = await asyncio.to_thread(self.endpoint.predict, instances=[instance])
-        predictions = response.predictions
-        pred = (
-            predictions[0]
-            if isinstance(predictions, list) and predictions
-            else predictions
+        response = await _retry_async(
+            lambda: asyncio.to_thread(
+                self.endpoint.raw_predict,
+                body=request_body,
+                headers={"Content-Type": "application/json"},
+            ),
+            self._RETRYABLE_REMOTE_EXCEPTIONS,
+            self.max_retries,
+            self.initial_delay,
+            self._REMOTE_MAX_DELAY,
         )
+        pred = json.loads(response.text)
         message = pred["choices"][0]["message"]
 
         if outlines_class is not None:
@@ -1168,21 +1235,21 @@ class VLLM(LLM):
         sampling_kwargs: Optional[Dict[str, Any]] = None,
     ) -> List[dict]:
         """Generate responses for multiple prompts in a single batch.
-
+        
         Args:
             prompts: List of prompts to generate responses for
             system_instructions: Optional list of system instructions (one per prompt)
             sampling_kwargs: Sampling parameters to use for all prompts
-
+            
         Returns:
             List of response dictionaries
         """
         if not prompts:
             return []
-
+        
         if system_instructions is None:
             system_instructions = [None] * len(prompts)
-
+        
         prompt_texts = [
             self._vllm_prompt_text(prompt, sys_inst)
             for prompt, sys_inst in zip(prompts, system_instructions)
@@ -1192,7 +1259,7 @@ class VLLM(LLM):
             print("[BATCH PROMPT TEXTS]")
             for i, pt in enumerate(prompt_texts):
                 print(f"Prompt {i + 1}:\n{pt}\n{'-' * 20}")
-
+        
         merged_sampling_kwargs = self._prepare_sampling_params(sampling_kwargs)
 
         def _generate_batch(batch_prompt_texts: List[str]):
@@ -1217,11 +1284,9 @@ class VLLM(LLM):
             responses = []
             for i in range(0, len(prompt_texts), self.batch_size):
                 batch_prompt_texts = prompt_texts[i : i + self.batch_size]
-                batch_responses = await asyncio.to_thread(
-                    _generate_batch, batch_prompt_texts
-                )
+                batch_responses = await asyncio.to_thread(_generate_batch, batch_prompt_texts)
                 responses.extend(batch_responses)
-
+        
         return [
             {
                 "response": response,
