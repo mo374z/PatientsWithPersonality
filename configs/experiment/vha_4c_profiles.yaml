@@ -1,0 +1,22 @@
+# @package _global_
+
+defaults:
+  - _self_
+  - models@writer_model: gemini_3_1_pro_judge
+
+four_c_path: data/vha/four_c_narratives.xlsx
+case_list: data/vha/simulation_cases.txt
+profiles_dir: data/vha/extracted_profiles
+output_dir: data/vha/extracted_profiles_4c
+concurrency: 16
+
+red_flag_field:
+  Medication Adherence: medication
+  Medical Equipment or Supplies Adherence: medical_device
+  Plan of Care Adherence: present_illness_positive
+  Appointment Adherence: present_illness_positive
+  Resource Utilization: present_illness_positive
+  Uncontrolled Chronic Conditions: present_illness_positive
+  Significant Weight Loss or Gain: present_illness_positive
+  Patient Knowledge of Health or Health Care Status: present_illness_positive
+  Other: present_illness_positive

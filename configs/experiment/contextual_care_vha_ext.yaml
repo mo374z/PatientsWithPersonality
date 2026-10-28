@@ -1,0 +1,10 @@
+# @package _global_
+
+defaults:
+  - contextual_care_vha
+  - _self_
+
+case_list: data/vha/contextual_care_cases_ext.txt
+profiles_dir: data/vha/extracted_profiles_4c_ext
+statements_path: data/vha/extracted_profiles_4c_ext/injected_statements.csv
+output_dir: results/contextual_care_vha_ext
