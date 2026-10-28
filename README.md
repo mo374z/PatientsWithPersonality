@@ -12,7 +12,7 @@
 
 [![Paper](https://img.shields.io/badge/arXiv-2606.17441-b31b1b.svg?style=flat)](https://arxiv.org/abs/2606.17441)
 [![Project Page](https://img.shields.io/badge/Project-Page-1f9e87.svg?style=flat)](https://mo374z.github.io/PatientsWithPersonality/)
-[![Demo](https://img.shields.io/badge/Live-Demo-f59e0b.svg?style=flat)](https://mo374z.github.io/PatientsWithPersonality/#demo)
+[![Demo](https://img.shields.io/badge/Live-Demo-f59e0b.svg?style=flat)](https://patient-simulator-demo-4os25b5fpq-ew.a.run.app/)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB.svg?style=flat&logo=python&logoColor=white)](https://www.python.org/)
 [![uv](https://img.shields.io/badge/managed%20by-uv-DE5FE9.svg?style=flat)](https://github.com/astral-sh/uv)
 
@@ -128,7 +128,7 @@ With PatientSim and AgentClinic every doctor model makes significantly fewer con
 
 ### Live demo
 
-Take a history from a PWP patient with your own HEXACO configuration on the [project page](https://mo374z.github.io/PatientsWithPersonality/#demo). To run the simulator locally with any configuration, use the playground below.
+Try to diagnose a simulated patient with your own HEXACO configuration via our small [demo app](https://patient-simulator-demo-4os25b5fpq-ew.a.run.app/). To run the simulator locally with any configuration, use the playground below.
 
 ### Simulator playground & evaluation explorer (Streamlit)
 
@@ -171,10 +171,13 @@ tests/                  Design checks for the clinician-study assignments
 If you find this work useful, please cite:
 
 ```bibtex
-@inproceedings{schlager2026patients,
+@misc{schlager2026patients,
   title     = {Patients With Personality: Realistic Patient Simulation through Controlled Diversity and Selective Disclosure},
   author    = {Schlager, Moritz and Jungmann, Friederike and Schmidgall, Samuel and Raffler, Philipp and Hartl, Franziska and Wende, Eva and Ro{\ss}m{\"u}ller, Paula and Ketzer, Conrad and Thompson, Matthew and Chen, Justin Anthony and Chen, Christina and Hassidim, Avinatan and Webster, Dale R. and Matias, Yossi and Liu, Yun and Rueckert, Daniel and Schaekermann, Mike and Hager, Paul},
-  booktitle = {Machine Learning for Health (ML4H)},
-  year      = {2026}
+  year={2026},
+  eprint={2606.17441},
+  archivePrefix={arXiv},
+  primaryClass={cs.HC},
+  url={https://arxiv.org/abs/2606.17441}, 
 }
 ```
