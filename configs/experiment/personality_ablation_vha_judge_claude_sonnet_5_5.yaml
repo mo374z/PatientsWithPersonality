@@ -1,0 +1,8 @@
+# @package _global_
+
+defaults:
+  - personality_ablation_vha
+  - override /models@llm_judge_model: claude_sonnet_5_5
+  - _self_
+
+scores_file: personality_ablation_judge_claude_sonnet_5_5.csv

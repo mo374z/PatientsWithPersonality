@@ -1,0 +1,8 @@
+# @package _global_
+
+defaults:
+  - personality_ablation
+  - _self_
+
+output_dir: results/patient_comparison_vha
+model_name: gemini-3.1-flash-lite

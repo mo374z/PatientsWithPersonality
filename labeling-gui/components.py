@@ -1,6 +1,6 @@
-from dash import html, dcc
+from dash import html
 
-FLAG_REASONS = [
+REASONS = [
     "medically_implausible",
     "non_response",
     "linguistically_unnatural",
@@ -10,7 +10,9 @@ FLAG_REASONS = [
     "other",
 ]
 
-FLAG_REASON_LABELS = {
+SPEAKER_LABELS = {"doctor": "👨‍⚕️ Doctor", "patient": "🧑‍🦱 Patient"}
+
+REASON_LABELS = {
     "medically_implausible": "Medically implausible",
     "non_response": "Non-response",
     "linguistically_unnatural": "Linguistically unnatural",
@@ -34,123 +36,46 @@ def render_patient_info(conversation_id: str, summary: str) -> html.Div:
     )
 
 
-def _flag_annotation(abs_idx: int, reasons: list, other_text: str = "") -> html.Div:
+def render_turn(text: str, speaker: str) -> html.Div:
     return html.Div(
         [
-            html.Span("⚑ ", style={"color": "#e74c3c"}),
-            dcc.Checklist(
-                id={"type": "flag-reasons", "index": abs_idx},
-                options=[
-                    {"label": f" {FLAG_REASON_LABELS[r]}", "value": r}
-                    for r in FLAG_REASONS
-                ],
-                value=reasons,
-                inline=True,
-                labelStyle={
-                    "marginRight": "8px",
-                    "fontSize": "11px",
-                    "cursor": "pointer",
-                },
-            ),
-            dcc.Input(
-                id={"type": "flag-other-text", "index": abs_idx},
-                type="text",
-                value=other_text,
-                placeholder="Specify (optional)...",
-                debounce=True,
-                style={
-                    "display": "inline-block" if "other" in reasons else "none",
-                    "marginLeft": "8px",
-                    "fontSize": "11px",
-                    "padding": "2px 6px",
-                    "border": "1px solid #bdc3c7",
-                    "borderRadius": "4px",
-                    "minWidth": "220px",
-                },
-            ),
+            html.Div(SPEAKER_LABELS[speaker], className="turn-speaker"),
+            html.Div(text, className="turn-bubble"),
         ],
-        className="flag-annotation",
+        className=f"turn turn-{speaker}",
     )
 
 
-def render_conversation(
-    turns: list[dict],
-    id_prefix: str = "",
-    turn_offset: int = 0,
-    flags: dict = None,
-    other_texts: dict = None,
-) -> html.Div:
-    header = html.Div(
-        [
-            html.Div(
-                [html.Span("👨‍⚕️", className="chat-icon"), html.Span("Doctor")],
-                className="chat-legend-doctor",
-            ),
-            html.Div(
-                [html.Span("Patient"), html.Span("🧑‍🦱", className="chat-icon")],
-                className="chat-legend-patient",
-            ),
-        ],
-        className="chat-legend",
-    )
-
-    bubbles = []
-    for i, turn in enumerate(turns):
-        absolute = i + turn_offset
-        display_num = absolute + 1
-
-        bubbles.append(
-            html.Div(
-                [
-                    html.Div(f"{display_num}", className="turn-number"),
-                    html.Div(turn["doctor"], className="turn-bubble"),
-                ],
-                className="turn turn-doctor",
-            )
-        )
-
-        if flags is not None:
-            turn_str = str(absolute)
-            is_flagged = turn_str in flags
-            reasons = flags.get(turn_str, [])
-
-            patient_children = [
-                html.Div(turn["patient"], className="turn-bubble"),
-                html.Button(
-                    "⚑",
-                    id={"type": "flag-btn", "index": absolute},
-                    className=f"flag-btn {'flagged' if is_flagged else ''}",
-                    n_clicks=0,
-                ),
-            ]
-            if is_flagged:
-                patient_children.append(
-                    _flag_annotation(
-                        absolute, reasons, (other_texts or {}).get(turn_str, "")
-                    )
-                )
-
-            bubbles.append(
-                html.Div(
-                    patient_children,
-                    className=f"turn turn-patient turn-patient-flaggable {'turn-flagged' if is_flagged else ''}",
-                )
-            )
-        else:
-            bubbles.append(
-                html.Div(
-                    [
-                        html.Div(turn["patient"], className="turn-bubble"),
-                        html.Div(f"{display_num}", className="turn-number"),
-                    ],
-                    className="turn turn-patient",
-                )
-            )
-
+def render_conversation(turns: list[dict], id_prefix: str = "") -> html.Div:
     return html.Div(
-        [header, *bubbles],
+        [
+            render_turn(turn[speaker], speaker)
+            for turn in turns
+            for speaker in SPEAKER_LABELS
+        ],
         className="conversation-container",
         id=f"{id_prefix}conversation",
+    )
+
+
+def render_thank_you() -> html.Div:
+    return html.Div(
+        html.Div(
+            [
+                html.Div("🎉", style={"fontSize": "56px", "marginBottom": "12px"}),
+                html.H2(
+                    "Thank you for your time!",
+                    style={"margin": "0 0 10px 0", "color": "#2c3e50"},
+                ),
+                html.P(
+                    "Both tasks are complete and your labels have been saved. "
+                    "You may now close this window.",
+                    style={"fontSize": "15px", "color": "#555", "margin": 0},
+                ),
+            ],
+            className="thank-you-card",
+        ),
+        className="thank-you-overlay",
     )
 
 

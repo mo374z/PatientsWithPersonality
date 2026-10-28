@@ -220,6 +220,53 @@ PERSONALITY_RECON_O_PROMPT = """Openness / Prior Beliefs (O) axis levels:
 
 """
 
+PERSONALITY_RECON_ANCHORED_AXES = {
+    "H": PERSONALITY_RECON_H_PROMPT,
+    "E": PERSONALITY_RECON_E_PROMPT,
+    "X": PERSONALITY_RECON_X_PROMPT,
+    "A": PERSONALITY_RECON_A_PROMPT,
+    "C": PERSONALITY_RECON_C_PROMPT,
+    "O": PERSONALITY_RECON_O_PROMPT,
+}
+
+PERSONALITY_RECON_NEUTRAL_AXES = {
+    "H": "'H': Honesty-Humility, reverse-coded — 1 = high honesty-humility, 3 = low honesty-humility.",
+    "E": "'E': Emotionality — 1 = low emotionality, 3 = high emotionality.",
+    "X": "'X': Extraversion — 1 = low extraversion, 3 = high extraversion.",
+    "A": "'A': Agreeableness, reverse-coded — 1 = high agreeableness, 3 = low agreeableness.",
+    "C": "'C': Conscientiousness, reverse-coded — 1 = high conscientiousness, 3 = low conscientiousness.",
+    "O": "'O': Openness to Experience, reverse-coded — 1 = high openness, 3 = low openness.",
+}
+
+PERSONALITY_RECON_ANCHORED_PROMPT = """You are an expert judge inferring HEXACO axes from a doctor-patient conversation.
+Use only patient behavior in the provided conversation and choose one level (1..3) per requested axis.
+Return only the structured output for requested axes.
+
+Requested axes: {requested_axes}
+
+Axis definitions and level criteria:
+{axis_definitions}
+
+Conversation:
+{conversation}"""
+
+PERSONALITY_RECON_NEUTRAL_PROMPT = """Recover the HEXACO personality axes of the patient from the doctor-patient conversation below.
+
+Rate the patient on each requested axis on a 1..3 scale, using the standard meaning of the HEXACO axis. The scale direction is given per axis; no further criteria are provided — judge from the patient's behavior in the conversation.
+
+Requested axes: {requested_axes}
+
+Axes and scale direction:
+{axis_definitions}
+
+Conversation:
+{conversation}"""
+
+PERSONALITY_RECON_VARIANTS = {
+    "anchored": (PERSONALITY_RECON_ANCHORED_PROMPT, PERSONALITY_RECON_ANCHORED_AXES),
+    "neutral": (PERSONALITY_RECON_NEUTRAL_PROMPT, PERSONALITY_RECON_NEUTRAL_AXES),
+}
+
 
 TAGGED_FACT_EXTRACTION_PROMPT = """You are a specialized medical scribe. Extract every health-related atomic fact stated by the patient in a single turn, tag each fact with the case description field it belongs to, and judge whether each fact is supported by the case description.
 

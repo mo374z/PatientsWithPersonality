@@ -1,5 +1,6 @@
 backend: APILLM
-name: gemini-3.1-flash-lite-preview
+name: gemini-3.1-flash-lite
+project: ${oc.env:GOOGLE_CLOUD_PROJECT,}
 vertexai: true
 api_key: ${oc.env:GOOGLE_CLOUD_API_KEY,}
 generation_config:

@@ -2,14 +2,11 @@ data/
 logs/
 results/
 outputs/
-.hydra/
-.claude/
-CLAUDE.md
-multirun/
-.github/
 keys.json
-cloudflared.deb
-*.DS_Store
+notebooks/figures/
+labeling-gui/labels*/
+*DS_Store
+*paper.pdf
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

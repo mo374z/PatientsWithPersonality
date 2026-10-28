@@ -8,6 +8,10 @@ defaults:
 
 output_dir: results/patient_comparison_default
 
+align_doctor: true
+
+simulation_concurrency: 8
+
 case_descriptions_dir: data/aci_bench/extracted_profiles
 conversations_dir: data/aci_bench/conversations
 conversations:
@@ -54,6 +58,8 @@ patient_configs:
       c: 1
       o: 1
       level: B
+      register: spoken
+      answer_form: 0.45
 
   - patient_type: PatientsWithPersonality
     params:
@@ -64,6 +70,8 @@ patient_configs:
       c: 2
       o: 1
       level: B
+      register: spoken
+      answer_form: 0.45
 
   - patient_type: PatientsWithPersonality
     params:
@@ -74,6 +82,8 @@ patient_configs:
       c: 2
       o: 2
       level: B
+      register: spoken
+      answer_form: 0.45
 
   - patient_type: PatientsWithPersonality
     params:
@@ -84,6 +94,8 @@ patient_configs:
       c: 1
       o: 1
       level: B
+      register: spoken
+      answer_form: 0.45
 
   - patient_type: PatientsWithPersonality
     params:
@@ -94,6 +106,8 @@ patient_configs:
       c: 1
       o: 1
       level: B
+      register: spoken
+      answer_form: 0.45
   - patient_type: PatientsWithPersonality
     params:
       h: 1
@@ -103,6 +117,8 @@ patient_configs:
       c: 1
       o: 1
       level: B
+      register: spoken
+      answer_form: 0.45
 
   - patient_type: PatientsWithPersonality
     params:
@@ -113,6 +129,8 @@ patient_configs:
       c: 1
       o: 1
       level: B
+      register: spoken
+      answer_form: 0.45
 
   - patient_type: PatientsWithPersonality
     params:
@@ -123,6 +141,8 @@ patient_configs:
       c: 3
       o: 1
       level: B
+      register: spoken
+      answer_form: 0.45
 
   - patient_type: PatientsWithPersonality
     params:
@@ -133,6 +153,8 @@ patient_configs:
       c: 1
       o: 3
       level: B
+      register: spoken
+      answer_form: 0.45
 
   - patient_type: PatientSimPatient
     params:

@@ -12,9 +12,9 @@ from typing import Awaitable, Callable, List, TypeVar
 import pandas as pd
 from omegaconf import DictConfig, OmegaConf
 
-from patient_simulator.misc.llm import APILLM, OpenRouterLLM, VLLM
-
 T = TypeVar("T")
+
+from patient_simulator.misc.llm import APILLM, OpenRouterLLM, VLLM
 
 
 def log_experiment(
@@ -97,21 +97,34 @@ def parse_transcript_file(path: str) -> List[tuple[str, str]]:
         elif speaker == "P":
             speaker = "PATIENT"
         turns.append((speaker, text))
-    return turns
+
+    leading_patient_turns = next(
+        (i for i, (speaker, _) in enumerate(turns) if speaker == "DOCTOR"), len(turns)
+    )
+    if leading_patient_turns:
+        log.warning(
+            "%s starts mid-encounter; dropping %d leading patient turn(s)",
+            path,
+            leading_patient_turns,
+        )
+    return turns[leading_patient_turns:]
 
 
-def load_key(
-    key_field: str,
-    env_var: str | None = None,
+def load_openrouter_api_key(
     keys_file: str | Path | None = None,
+    env_var: str = "OPENROUTER_API_KEY",
+    key_field: str = "OPENROUTER_KEY",
 ) -> str:
-    """Load a secret from an environment variable or keys.json."""
-    if env_var:
-        env_value = os.getenv(env_var)
-        if env_value:
-            return env_value
+    """Load OpenRouter API key from environment or keys.json."""
+    env_key = os.getenv(env_var)
+    if env_key:
+        return env_key
 
-    keys_file = Path(keys_file) if keys_file is not None else Path("keys.json")
+    if keys_file is None:
+        keys_file = Path("keys.json")
+    else:
+        keys_file = Path(keys_file)
+
     if not keys_file.exists():
         raise FileNotFoundError(f"keys.json not found at {keys_file}")
 
@@ -120,18 +133,6 @@ def load_key(
         raise KeyError(f"{key_field} not found in keys.json")
 
     return keys_data[key_field]
-
-
-def load_openrouter_api_key(keys_file: str | Path | None = None) -> str:
-    """Load OpenRouter API key from environment or keys.json."""
-    return load_key("OPENROUTER_KEY", env_var="OPENROUTER_API_KEY", keys_file=keys_file)
-
-
-def load_gcp_project(keys_file: str | Path | None = None) -> str:
-    """Load Google Cloud project id from environment or keys.json."""
-    return load_key(
-        "GOOGLE_CLOUD_PROJECT", env_var="GOOGLE_CLOUD_PROJECT", keys_file=keys_file
-    )
 
 
 def create_llm_instance(
@@ -150,24 +151,24 @@ def create_llm_instance(
     model_name = str(cfg["name"])
 
     if backend == "VLLM":
-        endpoint_id = cfg.get("endpoint_id")
         return VLLM(
             model=model_name,
-            endpoint_id=endpoint_id,
-            project=cfg.get("project") or load_gcp_project(keys_file)
-            if endpoint_id
-            else cfg.get("project"),
+            endpoint_id=cfg.get("endpoint_id"),
+            project=cfg.get("project"),
             location=cfg.get("location"),
             engine_kwargs=cfg.get("engine_kwargs", {}),
             sampling_kwargs=cfg.get("sampling_kwargs", {}),
             batch_size=cfg.get("batch_size"),
+            max_retries=cfg.get("max_retries", 5),
+            initial_delay=cfg.get("initial_delay", 2.0),
+            pool_maxsize=cfg.get("pool_maxsize", 32),
             use_cache=use_cache,
         )
 
     if backend in {"API", "APILLM"}:
         return APILLM(
             model=model_name,
-            project=cfg.get("project") or load_gcp_project(keys_file),
+            project=cfg.get("project"),
             location=cfg.get("location"),
             vertexai=cfg.get("vertexai", True),
             api_key=cfg.get("api_key"),
@@ -186,13 +187,71 @@ def create_llm_instance(
     raise ValueError(f"Unknown LLM backend: {backend}")
 
 
+def _on_demand_endpoint(model_cfg: DictConfig | dict):
+    cfg = (
+        OmegaConf.to_container(model_cfg, resolve=True)
+        if isinstance(model_cfg, DictConfig)
+        else dict(model_cfg)
+    )
+    od = cfg.get("on_demand")
+    if od is None:
+        return None, None, None
+
+    from google.cloud import aiplatform
+
+    aiplatform.init(project=cfg["project"], location=cfg["location"])
+    return aiplatform.Endpoint(cfg["endpoint_id"]), od, aiplatform
+
+
+def deploy_on_demand_model(model_cfg: DictConfig | dict) -> str | None:
+    """Deploy the model in a config's `on_demand` block to its endpoint.
+
+    Reuses the deployment if the desired model is already serving; otherwise clears
+    any existing deployment and deploys. Returns the deployed model id, or None if the
+    config has no `on_demand` block.
+    """
+    endpoint, od, aiplatform = _on_demand_endpoint(model_cfg)
+    if endpoint is None:
+        return None
+
+    deployed = endpoint.list_models()
+    for existing in deployed:
+        if existing.display_name == od["deployed_model_display_name"]:
+            return existing.id
+
+    for existing in deployed:
+        endpoint.undeploy(deployed_model_id=existing.id)
+
+    endpoint.deploy(
+        model=aiplatform.Model(od["model_id"]),
+        deployed_model_display_name=od["deployed_model_display_name"],
+        machine_type=od["machine_type"],
+        accelerator_type=od["accelerator_type"],
+        accelerator_count=od["accelerator_count"],
+        min_replica_count=od["min_replica_count"],
+        max_replica_count=od["max_replica_count"],
+        traffic_percentage=100,
+        sync=True,
+    )
+    return endpoint.list_models()[0].id
+
+
+def undeploy_on_demand_model(
+    model_cfg: DictConfig | dict, deployed_model_id: str
+) -> None:
+    """Undeploy a previously deployed on-demand model from its endpoint."""
+    endpoint, _, _ = _on_demand_endpoint(model_cfg)
+    if endpoint is not None:
+        endpoint.undeploy(deployed_model_id=deployed_model_id)
+
+
 def extract_tagged_text(text: str, tag: str) -> str:
-    """Extract text enclosed in an XML-like tag."""
-    pattern = re.compile(rf"<{tag}>(.*?)</{tag}>", re.IGNORECASE | re.DOTALL)
-    match = pattern.search(text or "")
-    if match:
-        return match.group(1).strip()
-    return (text or "").strip()
+	"""Extract text enclosed in an XML-like tag."""
+	pattern = re.compile(rf"<{tag}>(.*?)</{tag}>", re.IGNORECASE | re.DOTALL)
+	match = pattern.search(text or "")
+	if match:
+		return match.group(1).strip()
+	return (text or "").strip()
 
 
 def expand_param_grid(params: dict) -> list[dict]:
@@ -213,6 +272,7 @@ def expand_param_grid(params: dict) -> list[dict]:
 
 def patient_name_from_config(patient_type: str, params: dict) -> str:
     if patient_type in (
+        "RealPatient",
         "BaselinePatient",
         "CraftMDPatient",
         "StateAwarePatient",
@@ -229,9 +289,7 @@ def patient_name_from_config(patient_type: str, params: dict) -> str:
         )
     if patient_type == "PatientsWithPersonality":
         dynamic = params.get("dynamic_case_description", True)
-        prefix = (
-            "PatientsWithPersonality" if dynamic else "PatientsWithPersonality_Static"
-        )
+        prefix = "PatientsWithPersonality" if dynamic else "PatientsWithPersonality_Static"
         return f"{prefix}_H{params['h']}_E{params['e']}_X{params['x']}_A{params['a']}_C{params['c']}_O{params['o']}_L{params['level']}"
     raise ValueError(f"Unknown patient type: {patient_type}")
 
@@ -248,27 +306,20 @@ def check_experiment_completeness(cfg: dict, delete_incomplete: bool = False) ->
         conversations = sorted(p.stem for p in conversations_dir.glob("*.txt"))
 
     patient_combos = [
-        (
-            patient_cfg["patient_type"],
-            patient_name_from_config(patient_cfg["patient_type"], combo),
-        )
+        (patient_cfg["patient_type"], patient_name_from_config(patient_cfg["patient_type"], combo))
         for patient_cfg in cfg["patient_configs"]
         for combo in expand_param_grid(patient_cfg.get("params") or {})
     ]
 
     conv_res_path = output_dir / "all_conversations.csv"
     eval_paths = (
-        set(pd.read_csv(conv_res_path)["path"].values)
-        if conv_res_path.exists()
-        else set()
+        set(pd.read_csv(conv_res_path)["path"].values) if conv_res_path.exists() else set()
     )
 
     missing_sim, wrong_turns, missing_eval = [], [], []
 
     for conversation in conversations:
-        orig_conv = parse_transcript_file(
-            str(conversations_dir / f"{conversation}.txt")
-        )
+        orig_conv = parse_transcript_file(str(conversations_dir / f"{conversation}.txt"))
         if max_turns is not None:
             orig_conv = orig_conv[:max_turns]
         expected_turns = sum(1 for speaker, _ in orig_conv if speaker == "PATIENT")
@@ -283,9 +334,7 @@ def check_experiment_completeness(cfg: dict, delete_incomplete: bool = False) ->
 
             actual_turns = len(pd.read_csv(turns_path))
             if actual_turns != expected_turns:
-                wrong_turns.append(
-                    (conversation, patient_name, expected_turns, actual_turns)
-                )
+                wrong_turns.append((conversation, patient_name, expected_turns, actual_turns))
                 if delete_incomplete:
                     turns_path.unlink()
 
@@ -294,26 +343,18 @@ def check_experiment_completeness(cfg: dict, delete_incomplete: bool = False) ->
 
     total = len(conversations) * len(patient_combos)
     print(f"Experiment : {output_dir}")
-    print(
-        f"Conversations: {len(conversations)}  |  Patient configs: {len(patient_combos)}  |  Total: {total}"
-    )
+    print(f"Conversations: {len(conversations)}  |  Patient configs: {len(patient_combos)}  |  Total: {total}")
 
-    print(
-        f"\n── Simulation ({'OK' if not missing_sim else f'{len(missing_sim)} missing'})"
-    )
+    print(f"\n── Simulation ({'OK' if not missing_sim else f'{len(missing_sim)} missing'})")
     for conv, pat in missing_sim:
         print(f"   {conv} / {pat}")
 
-    print(
-        f"\n── Turn count ({'OK' if not wrong_turns else f'{len(wrong_turns)} mismatch'})"
-    )
+    print(f"\n── Turn count ({'OK' if not wrong_turns else f'{len(wrong_turns)} mismatch'})")
     for conv, pat, exp, got in wrong_turns:
         suffix = " → deleted" if delete_incomplete else ""
         print(f"   {conv} / {pat}: expected {exp}, got {got}{suffix}")
 
-    print(
-        f"\n── Evaluation ({'OK' if not missing_eval else f'{len(missing_eval)} missing'})"
-    )
+    print(f"\n── Evaluation ({'OK' if not missing_eval else f'{len(missing_eval)} missing'})")
     for conv, pat in missing_eval:
         print(f"   {conv} / {pat}")
 

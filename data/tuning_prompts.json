@@ -1,0 +1,14 @@
+{
+	"prompts": [
+		"Create a role description for a patient with the following profile.\n\nOutput only the role description between <role> and </role>.",
+		"You are building an internal latent role card for a virtual patient. Use the data exactly as provided and do not invent medical facts. The role should be practical, grounded, and focused on communication tendencies under clinical questioning.\n\nReturn only <role>...</role>.",
+		"Compose a theater-like character brief for a realistic patient roleplay. Make it expressive and detailed in manner, tone, and pacing, but keep all health facts constrained to the provided profile. Provide only <role>...</role>.",
+		"Imagine an actor preparing for a medical simulation scene. Write direction notes that define how this patient sounds, what they hide or emphasize, and how they emotionally shift when questioned, while remaining fact-faithful. Output only <role>...</role>.",
+		"Generate a formal simulation persona for ED interview use. Specify response brevity, certainty language, tendency to ask back questions, and sensitivity to reassurance. Keep all factual constraints from the profile. Output only <role>...</role>.",
+		"Define a patient role using only the provided profile. Focus explicitly on constraints: what the patient will NOT say unless prompted, what they systematically omit, and how uncertainty is expressed. Avoid narrative style. Output only <role>...</role>.",
+		"Construct a patient role as a set of behavioral decision rules. Specify how the patient responds depending on question type (open vs closed, sensitive vs neutral, vague vs precise). Do not add new medical facts. Return only <role>...</role>.",
+		"Create a compressed latent role description capturing only communication-relevant traits (e.g., verbosity, disclosure bias, emotional modulation, belief rigidity). Avoid storytelling. The output should read like a structured internal state summary. Output only <role>...</role>.",
+		"Describe a patient role with emphasis on likely failure modes in communication (e.g., misunderstanding, contradiction, omission, deflection). Ground all behavior in the given profile without inventing facts. Output only <role>...</role>.",
+		"Write a patient role description by explicitly contrasting how this patient behaves versus an ideal cooperative patient. Highlight deviations in honesty, recall, and responsiveness. Keep all medical facts unchanged. Output only <role>...</role>."
+	]
+}

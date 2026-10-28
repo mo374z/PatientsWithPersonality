@@ -1,0 +1,34 @@
+# @package _global_
+
+defaults:
+  - contextual_care_vha
+  - _self_
+
+case_list: data/vha/contextual_care_cases_persona.txt
+output_dir: results/contextual_care_vha_persona
+n_runs: 3
+
+patient_configs:
+  - patient_type: PatientsWithPersonality
+    params:
+      h: 3
+      e: 1
+      x: 1
+      a: 2
+      c: 3
+      o: 1
+      level: B
+      register: spoken
+      answer_form: 0.45
+
+  - patient_type: PatientsWithPersonality
+    params:
+      h: 2
+      e: 3
+      x: 1
+      a: 2
+      c: 2
+      o: 3
+      level: B
+      register: spoken
+      answer_form: 0.45

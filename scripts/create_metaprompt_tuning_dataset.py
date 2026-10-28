@@ -32,9 +32,16 @@ async def _build_dataset(
     meta_llm,
     rows_per_profile: int,
     seed: int,
+    register: str,
+    answer_form: float,
+    test_fraction: float,
 ) -> pd.DataFrame:
     rng = random.Random(seed)
     rows: list[dict[str, Any]] = []
+
+    shuffled = list(range(len(profiles)))
+    rng.shuffle(shuffled)
+    test_profiles = set(shuffled[: max(1, round(len(profiles) * test_fraction))])
 
     for profile_idx, profile in enumerate(profiles):
         for sample_idx in range(rows_per_profile):
@@ -57,28 +64,17 @@ async def _build_dataset(
                 llm=meta_llm,
                 meta_llm=meta_llm,
                 level=cefr_level,
+                register=register,
+                answer_form=answer_form,
                 dynamic_case_description=False,
                 verbosity=0,
             )
             await patient._initialize_dynamic_prompts()
 
-            personal_information = patient._build_personal_information_text()
-            hexaco_personality = patient._build_hexaco_personality_text()
-
-            model_input = "\n".join(
-                [
-                    "Personal Information:",
-                    personal_information,
-                    "",
-                    "HEXACO Personality:",
-                    hexaco_personality,
-                ]
-            )
-
             rows.append(
                 {
                     "row_id": f"profile_{profile_idx}_sample_{sample_idx}",
-                    "x": model_input,
+                    "x": patient.build_role_inputs(),
                     "profile_json": json.dumps(profile),
                     "cefr_level": cefr_level,
                     "h_trait": h_trait,
@@ -87,6 +83,7 @@ async def _build_dataset(
                     "a_trait": a_trait,
                     "c_trait": c_trait,
                     "o_trait": o_trait,
+                    "split": "test" if profile_idx in test_profiles else "train",
                 }
             )
 
@@ -120,6 +117,9 @@ def main(cfg: DictConfig) -> None:
             meta_llm=meta_llm,
             rows_per_profile=rows_per_profile,
             seed=int(cfg.seed),
+            register=str(cfg.register),
+            answer_form=float(cfg.answer_form),
+            test_fraction=float(cfg.test_fraction),
         )
     )
 

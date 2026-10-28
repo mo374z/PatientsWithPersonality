@@ -2,6 +2,8 @@ import json
 import tempfile
 from pathlib import Path
 
+TASKS = ("realism", "personality")
+
 _labels_dir: Path = None
 
 
@@ -48,6 +50,11 @@ def get_progress(user_id: str, task_type: str) -> tuple[int, int]:
     assignments = data.get("task_assignments", {})
     labels = data.get("labels", {})
     return len(labels), len(assignments)
+
+
+def all_tasks_complete(user_id: str) -> bool:
+    progress = [get_progress(user_id, task) for task in TASKS]
+    return all(total > 0 and done == total for done, total in progress)
 
 
 def list_users() -> list[str]:

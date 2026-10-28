@@ -1,0 +1,186 @@
+{
+  "turn_window": 10,
+  "reference_arm": "RealPatient",
+  "windows": {
+    "A343": {
+      "start": 20,
+      "fields": 8,
+      "patient_words": 99,
+      "n_turns": 81
+    },
+    "B008": {
+      "start": 50,
+      "fields": 5,
+      "patient_words": 318,
+      "n_turns": 84
+    },
+    "B273": {
+      "start": 43,
+      "fields": 4,
+      "patient_words": 134,
+      "n_turns": 71
+    },
+    "B311": {
+      "start": 7,
+      "fields": 5,
+      "patient_words": 248,
+      "n_turns": 97
+    },
+    "B552": {
+      "start": 27,
+      "fields": 6,
+      "patient_words": 68,
+      "n_turns": 79
+    },
+    "D009": {
+      "start": 6,
+      "fields": 5,
+      "patient_words": 71,
+      "n_turns": 64
+    },
+    "D289": {
+      "start": 23,
+      "fields": 7,
+      "patient_words": 78,
+      "n_turns": 98
+    },
+    "E679": {
+      "start": 11,
+      "fields": 9,
+      "patient_words": 698,
+      "n_turns": 52
+    },
+    "E862": {
+      "start": 4,
+      "fields": 8,
+      "patient_words": 254,
+      "n_turns": 87
+    },
+    "F609": {
+      "start": 26,
+      "fields": 6,
+      "patient_words": 93,
+      "n_turns": 63
+    },
+    "G360": {
+      "start": 33,
+      "fields": 5,
+      "patient_words": 73,
+      "n_turns": 89
+    },
+    "I984": {
+      "start": 57,
+      "fields": 3,
+      "patient_words": 110,
+      "n_turns": 80
+    },
+    "K118": {
+      "start": 24,
+      "fields": 5,
+      "patient_words": 156,
+      "n_turns": 64
+    },
+    "K397": {
+      "start": 14,
+      "fields": 6,
+      "patient_words": 185,
+      "n_turns": 84
+    },
+    "K792": {
+      "start": 17,
+      "fields": 5,
+      "patient_words": 83,
+      "n_turns": 89
+    },
+    "L144": {
+      "start": 9,
+      "fields": 6,
+      "patient_words": 114,
+      "n_turns": 76
+    },
+    "L314": {
+      "start": 58,
+      "fields": 3,
+      "patient_words": 71,
+      "n_turns": 76
+    },
+    "M483": {
+      "start": 40,
+      "fields": 6,
+      "patient_words": 209,
+      "n_turns": 81
+    },
+    "N112": {
+      "start": 12,
+      "fields": 6,
+      "patient_words": 102,
+      "n_turns": 43
+    },
+    "N927": {
+      "start": 43,
+      "fields": 5,
+      "patient_words": 98,
+      "n_turns": 95
+    },
+    "N965": {
+      "start": 32,
+      "fields": 6,
+      "patient_words": 169,
+      "n_turns": 95
+    },
+    "P355": {
+      "start": 58,
+      "fields": 6,
+      "patient_words": 173,
+      "n_turns": 88
+    },
+    "P441": {
+      "start": 4,
+      "fields": 6,
+      "patient_words": 225,
+      "n_turns": 93
+    },
+    "P493": {
+      "start": 36,
+      "fields": 7,
+      "patient_words": 123,
+      "n_turns": 68
+    },
+    "Q997": {
+      "start": 6,
+      "fields": 7,
+      "patient_words": 230,
+      "n_turns": 72
+    },
+    "T348": {
+      "start": 22,
+      "fields": 5,
+      "patient_words": 151,
+      "n_turns": 95
+    },
+    "T505": {
+      "start": 35,
+      "fields": 5,
+      "patient_words": 110,
+      "n_turns": 89
+    },
+    "X294": {
+      "start": 59,
+      "fields": 5,
+      "patient_words": 49,
+      "n_turns": 81
+    },
+    "Y477": {
+      "start": 7,
+      "fields": 4,
+      "patient_words": 51,
+      "n_turns": 79
+    },
+    "Y768": {
+      "start": 27,
+      "fields": 5,
+      "patient_words": 110,
+      "n_turns": 76
+    }
+  }
+}

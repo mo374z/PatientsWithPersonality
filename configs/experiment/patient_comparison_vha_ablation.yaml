@@ -1,0 +1,33 @@
+# @package _global_
+
+defaults:
+  - patient_comparison_vha
+  - _self_
+
+output_dir: results/patient_comparison_vha_ablation
+
+patient_configs:
+  - patient_type: PatientsWithPersonality
+    params:
+      h: 2
+      e: 1
+      x: 1
+      a: 1
+      c: 2
+      o: 1
+      level: B
+      register: spoken
+      answer_form: 0.45
+
+  - patient_type: PatientsWithPersonality
+    params:
+      h: 2
+      e: 1
+      x: 1
+      a: 2
+      c: 2
+      o: 1
+      level: B
+      register: spoken
+      answer_form: 0.45
+      dynamic_case_description: false

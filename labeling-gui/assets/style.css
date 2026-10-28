@@ -125,200 +125,6 @@ body {
     box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
 
-.chat-legend {
-    display: flex;
-    justify-content: space-between;
-    padding: 12px 0 10px 0;
-    border-bottom: 1px solid #ecf0f1;
-    margin-bottom: 12px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #7f8c8d;
-    position: sticky;
-    top: 0;
-    background: #fff;
-    z-index: 1;
-}
-
-.chat-legend-doctor {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.chat-legend-patient {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.chat-icon {
-    font-size: 18px;
-}
-
-.turn {
-    margin-bottom: 10px;
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-}
-
-.turn-number {
-    min-width: 20px;
-    font-size: 10px;
-    color: #bdc3c7;
-    padding-top: 10px;
-    text-align: right;
-    flex-shrink: 0;
-}
-
-.turn-bubble {
-    padding: 9px 13px;
-    border-radius: 10px;
-    max-width: 78%;
-    line-height: 1.5;
-    font-size: 14px;
-}
-
-.turn-doctor .turn-bubble {
-    background: #ecf0f1;
-    color: #2c3e50;
-    border-top-left-radius: 2px;
-}
-
-.turn-patient .turn-bubble {
-    background: #d4edfc;
-    color: #1a3a4a;
-    border-left: 3px solid #3498db;
-    border-top-right-radius: 2px;
-    margin-left: auto;
-}
-
-.turn-doctor {
-    justify-content: flex-start;
-}
-
-.turn-patient {
-    justify-content: flex-end;
-}
-
-/* Flaggable patient turns in chat view */
-.turn-patient-flaggable {
-    position: relative;
-    flex-wrap: wrap;
-}
-
-.turn-patient-flaggable .turn-bubble {
-    padding-right: 36px;
-}
-
-.turn-patient-flaggable .flag-btn {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-}
-
-.turn-patient-flaggable .flag-annotation {
-    width: 100%;
-    margin-left: auto;
-    max-width: 78%;
-}
-
-.turn-flagged .turn-bubble {
-    background: #fdecea;
-    border-left-color: #e74c3c;
-}
-
-.controls-panel {
-    background: #fff;
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-    margin-bottom: 20px;
-}
-
-.controls-panel h4 {
-    margin-top: 0;
-    color: #2c3e50;
-    border-bottom: 1px solid #ecf0f1;
-    padding-bottom: 8px;
-}
-
-/* Flag buttons & annotations */
-.flag-btn {
-    background: none;
-    border: 1px solid #bdc3c7;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-    padding: 2px 6px;
-    color: #95a5a6;
-    line-height: 1;
-}
-
-.flag-btn:hover {
-    background: #fadbd8;
-    border-color: #e74c3c;
-    color: #e74c3c;
-}
-
-.flag-btn.flagged {
-    background: #e74c3c;
-    color: #fff;
-    border-color: #e74c3c;
-}
-
-.flag-annotation {
-    margin-top: 8px;
-    padding-top: 6px;
-    border-top: 1px solid rgba(231,76,60,0.2);
-    font-size: 12px;
-    display: flex;
-    align-items: flex-start;
-    flex-wrap: wrap;
-    gap: 2px;
-}
-
-.rating-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 4px;
-    flex: 1;
-}
-
-.rating-row > div:last-child {
-    flex: 1;
-}
-
-/* Tooltip */
-.tooltip-wrapper {
-    display: inline-flex;
-    align-items: center;
-    margin-left: 4px;
-}
-
-.tooltip-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 15px;
-    height: 15px;
-    border-radius: 50%;
-    border: 1px solid #aaa;
-    font-size: 10px;
-    color: #7f8c8d;
-    cursor: help;
-    font-style: normal;
-    line-height: 1;
-}
-
-.rating-label {
-    min-width: 140px;
-    font-size: 13px;
-    color: #2c3e50;
-}
-
 /* Welcome page */
 .welcome-container {
     max-width: 640px;
@@ -374,4 +180,230 @@ body {
     padding: 2px 8px;
     border-radius: 10px;
     margin-left: 8px;
+}
+
+/* Turn bubbles */
+.turn {
+    margin-bottom: 10px;
+}
+
+.turn-speaker {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #95a5a6;
+    margin-bottom: 3px;
+}
+
+.turn-doctor .turn-speaker {
+    text-align: left;
+}
+
+.turn-patient .turn-speaker {
+    text-align: right;
+}
+
+.turn-bubble {
+    padding: 9px 13px;
+    border-radius: 10px;
+    line-height: 1.5;
+    font-size: 14px;
+}
+
+.turn-doctor .turn-bubble {
+    background: #ecf0f1;
+    color: #2c3e50;
+    border-left: 3px solid #95a5a6;
+}
+
+.turn-patient .turn-bubble {
+    background: #d4edfc;
+    color: #1a3a4a;
+    border-right: 3px solid #3498db;
+    text-align: right;
+}
+
+/* Realism task: arms side by side, rows aligned by turn */
+.important-notice {
+    background: #fdecea;
+    border: 1px solid #e74c3c;
+    border-left: 4px solid #e74c3c;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #922b21;
+}
+
+.important-notice strong {
+    color: #c0392b;
+}
+
+.realism-board {
+    min-width: fit-content;
+}
+
+.realism-grid,
+.realism-controls {
+    display: grid;
+    gap: 0 16px;
+}
+
+.realism-grid {
+    align-items: stretch;
+}
+
+.grid-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #fff;
+    padding: 10px 16px;
+    margin-bottom: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    color: #2c3e50;
+    border-radius: 8px 8px 0 0;
+    border-bottom: 2px solid #ecf0f1;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.grid-cell {
+    background: #fff;
+    padding: 4px 14px;
+    min-width: 0;
+}
+
+.realism-bar {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+    background: #fff;
+    border-top: 2px solid #ecf0f1;
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.10);
+    padding: 12px 16px 14px 16px;
+    margin-top: 12px;
+}
+
+.controls-cell {
+    position: relative;
+    min-width: 0;
+}
+
+.controls-question {
+    font-size: 13px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 6px;
+}
+
+.reason-button {
+    margin-top: 8px;
+    width: 100%;
+    padding: 6px 10px;
+    font-size: 12px;
+    background: #fdecea;
+    color: #c0392b;
+    border: 1px solid #e6b0aa;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.reason-button:hover {
+    background: #fadbd8;
+}
+
+/* Reason picker dialog */
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 28, 33, 0.55);
+    z-index: 1;
+    cursor: pointer;
+}
+
+.reason-dialog {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 0;
+    right: 0;
+    z-index: 2;
+    background: #fff;
+    border-radius: 10px;
+    padding: 14px 16px 12px 16px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+}
+
+.reason-dialog-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 8px;
+}
+
+.reason-checklist label {
+    display: block;
+    font-size: 13px;
+    cursor: pointer;
+    margin-bottom: 3px;
+}
+
+.reason-other {
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 6px;
+    padding: 5px 7px;
+    font-size: 12px;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+}
+
+.reason-done {
+    margin-top: 10px;
+    width: 100%;
+    padding: 7px;
+    background: #3498db;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.submit-button {
+    margin-top: 14px;
+    padding: 9px 20px;
+    width: 100%;
+    background: #27ae60;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.submit-error {
+    color: #e74c3c;
+    font-size: 12px;
+    margin-top: 6px;
+}
+
+.thank-you-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 28, 33, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+.thank-you-card {
+    background: #fff;
+    padding: 40px 48px;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+    text-align: center;
 }

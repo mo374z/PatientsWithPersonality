@@ -44,17 +44,23 @@ with st.sidebar:
 
     st.subheader("Select patient proflie")
 
-    profiles_dir = Path(__file__).parent.parent / "data" / "extracted_profiles_red"
-    profile_files = sorted(
-        [p.name for p in profiles_dir.glob("*.json") if p.name != "short_desc.json"]
-    )
-    profile_options = profile_files + ["Custom"]
+    vha_dir = PROJECT_ROOT / "data" / "vha"
+    profiles_dir = vha_dir / "extracted_profiles"
+    case_splits = {
+        case: split
+        for split, case_list in [
+            ("simulation", "simulation_cases.txt"),
+            ("tuning", "tuning_cases.txt"),
+        ]
+        for case in (vha_dir / case_list).read_text().split()
+    }
+    profile_options = sorted(f"{case}.json" for case in case_splits) + ["Custom"]
 
     selected_profile_name = st.selectbox(
         "Load from extracted profiles",
         profile_options,
         index=0,
-        help="Search and load a structured profile from data/extracted_profiles_red",
+        help="Search and load a curated VHA case from data/vha/extracted_profiles",
         disabled=conversation_started,
     )
 
@@ -83,7 +89,7 @@ with st.sidebar:
             st.session_state.display_profile_str = None
 
     short_desc_map = {}
-    short_desc_path = profiles_dir / "short_desc.json"
+    short_desc_path = vha_dir / "short_desc.json"
     try:
         short_desc_map = json.loads(short_desc_path.read_text())
     except Exception as exc:  # noqa: BLE001
@@ -98,10 +104,14 @@ with st.sidebar:
             selected_profile = json.loads(st.session_state.original_profile_str)
             selected_profile_str = st.session_state.original_profile_str
 
+            case_id = Path(selected_profile_name).stem
             profile_desc = short_desc_map.get(
-                selected_profile_name, "No short description available."
+                case_id, "No short description available."
             )
-            st.markdown(f"**Profile Description:** {profile_desc}")
+            st.markdown(
+                f"**Profile Description:** {profile_desc}\n\n"
+                f"**Split:** {case_splits[case_id]}"
+            )
 
             with st.expander("Raw Profile JSON"):
                 st.text_area(
@@ -281,6 +291,23 @@ with st.sidebar:
                 disabled=conversation_started,
             )
 
+            register = st.selectbox(
+                "Register",
+                ["spoken", "written"],
+                index=0,
+                help="Whether the encounter is spoken out loud or typed in a chat",
+                disabled=conversation_started,
+            )
+            answer_form = st.slider(
+                "Answer form rate",
+                min_value=0.0,
+                max_value=1.0,
+                value=0.45,
+                step=0.05,
+                help="How often the answer length is matched to the question form",
+                disabled=conversation_started,
+            )
+
             # dynamic_case_description = st.checkbox(
             #     "Enable Dynamic Case Description",
             #     value=True,
@@ -297,6 +324,8 @@ with st.sidebar:
             "c": c,
             "o": o,
             "level": level,
+            "register": register,
+            "answer_form": answer_form,
             # "dynamic_case_description": dynamic_case_description,
             "verbosity": debug_verbosity,
         }
@@ -313,7 +342,7 @@ with st.sidebar:
     if llm_backend == "APILLM":
         model = st.text_input(
             "Model",
-            value="gemini-3.1-flash-lite-preview",
+            value="gemini-3.1-flash-lite",
             disabled=conversation_started,
             help="Gemini model identifier",
         )
@@ -323,6 +352,7 @@ with st.sidebar:
             )
 
         llm_config = {
+            "project": os.getenv("GOOGLE_CLOUD_PROJECT"),
             "vertexai": True,
             "api_key": os.getenv("GOOGLE_CLOUD_API_KEY"),
             "generation_config": {
@@ -468,7 +498,7 @@ with st.sidebar:
     if meta_llm_backend == "APILLM":
         meta_model = st.text_input(
             "Meta Model",
-            value="gemini-3.1-flash-lite-preview",
+            value="gemini-3.1-flash-lite",
             disabled=conversation_started,
             key="meta_model",
             help="Gemini model identifier for meta-cognitive tasks",
@@ -479,6 +509,7 @@ with st.sidebar:
             )
 
         meta_runtime_config = {
+            "project": os.getenv("GOOGLE_CLOUD_PROJECT"),
             "vertexai": True,
             "api_key": os.getenv("GOOGLE_CLOUD_API_KEY"),
             "generation_config": {
@@ -543,8 +574,8 @@ with st.sidebar:
             meta_max_output_tokens = st.number_input(
                 "Max Output Tokens",
                 min_value=128,
-                max_value=4096,
-                value=512,
+                max_value=8192,
+                value=4096,
                 disabled=conversation_started,
                 key="meta_max_output_tokens",
             )

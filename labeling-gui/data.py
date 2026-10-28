@@ -1,5 +1,4 @@
 import json
-import random
 import re
 import functools
 from pathlib import Path
@@ -7,8 +6,6 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
-
-CONVERSATION_WINDOW_SIZE = 5
 
 _results_dir: Path = None
 _data_dir: Path = None
@@ -39,6 +36,14 @@ def get_task_config(task: str) -> dict:
     if task not in _study_config:
         raise KeyError(f"Task '{task}' not found in study config")
     return _study_config[task]
+
+
+RATER_ID_PATTERN = re.compile(r"^[a-z0-9]{4,}$")
+
+
+def normalize_rater_id(user_id: str) -> str | None:
+    normalized = (user_id or "").strip().lower()
+    return normalized if RATER_ID_PATTERN.match(normalized) else None
 
 
 def _get_results_dir() -> Path:
@@ -117,46 +122,50 @@ def load_conversation(simulator: str, conversation_id: str) -> list[dict]:
     ]
 
 
-def load_real_conversation(conversation_id: str) -> list[dict]:
-    ref_sim = get_simulators()[0]
-    df = _load_turns_df(ref_sim, conversation_id)
-    return [
-        {
-            "doctor": _clean_response(row["doctor_question"]),
-            "patient": _clean_response(row["real_response"]),
-        }
-        for _, row in df.iterrows()
-    ]
-
-
-def load_source_conversation(source: str, conversation_id: str) -> list[dict]:
-    if source == "real":
-        return load_real_conversation(conversation_id)
-    return load_conversation(source, conversation_id)
-
-
-@functools.lru_cache(maxsize=2)
-def _load_short_desc(dataset: str) -> dict:
+@functools.lru_cache(maxsize=8)
+def _load_dataset_file(dataset: str, name: str, generator: str) -> dict:
     if _data_dir is None:
-        return {}
-    path = _data_dir / dataset / "short_desc.json"
+        raise RuntimeError("data.init() must be called with a data_dir")
+    path = _data_dir / dataset / name
     if not path.exists():
-        return {}
+        raise FileNotFoundError(f"{path} not found. Run {generator} first.")
     return json.loads(path.read_text())
 
 
-def select_turn_window(
-    turns: list[dict], seed_key: str, size: int = CONVERSATION_WINDOW_SIZE
-) -> tuple[list[dict], int]:
-    if len(turns) <= size:
-        return turns, 0
-    start = random.Random(hash(seed_key)).randint(0, len(turns) - size)
-    return turns[start : start + size], start
+def _dataset() -> str:
+    if "dataset" not in _study_config:
+        raise KeyError("Study config must specify 'dataset'")
+    return _study_config["dataset"]
+
+
+def _excerpts() -> dict:
+    return _load_dataset_file(
+        _dataset(), "excerpt_windows.json", "scripts/scan_excerpt_windows.py"
+    )
+
+
+def get_turn_window_size() -> int:
+    return _excerpts()["turn_window"]
+
+
+def get_excerpt_start(conversation_id: str) -> int:
+    windows = _excerpts()["windows"]
+    if conversation_id not in windows:
+        raise KeyError(
+            f"No excerpt window scanned for conversation '{conversation_id}'"
+        )
+    return windows[conversation_id]["start"]
+
+
+def take_excerpt(turns: list[dict], conversation_id: str) -> list[dict]:
+    start = get_excerpt_start(conversation_id)
+    return turns[start : start + get_turn_window_size()]
 
 
 def get_patient_summary(conversation_id: str) -> str:
-    if conversation_id.startswith("VS"):
-        desc = _load_short_desc("aci_bench")
-        return desc.get(conversation_id, "")
-    desc = _load_short_desc("osce_bench")
-    return desc.get(f"{conversation_id}.json", "")
+    summaries = _load_dataset_file(
+        _dataset(), "case_summaries.json", "scripts/shorten_case_summaries.py"
+    )
+    if conversation_id not in summaries:
+        raise KeyError(f"No case summary for conversation '{conversation_id}'")
+    return summaries[conversation_id]

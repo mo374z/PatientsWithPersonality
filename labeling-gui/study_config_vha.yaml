@@ -1,0 +1,69 @@
+dataset: vha
+
+realism:
+  arms_per_case: 3
+  exclusive_arms:
+    - RealPatient
+    - BaselinePatient
+  always_arms:
+    - PatientsWithPersonality_H2_E1_X1_A2_C2_O1_LB
+  arms:
+    - RealPatient
+    - PatientsWithPersonality_H2_E1_X1_A2_C2_O1_LB
+    - BaselinePatient
+    - PatientSimPatient_persplain_cefrB_dazednormal_recallhigh
+    - AgentClinicPatient_nobias
+  cases:
+    - A343
+    - B008
+    - B273
+    - B311
+    - B552
+    - D009
+    - D289
+    - E679
+    - E862
+    - F609
+    - G360
+    - I984
+    - K118
+    - K397
+    - K792
+    # - L144
+    - L314
+    - M483
+    # - N112
+    - N927
+    - P441
+    - T505
+
+personality:
+  arm_pairs:
+    - axis: H
+      pwp: PatientsWithPersonality_H3_E1_X1_A1_C1_O1_LB
+      patientsim: PatientSimPatient_persdistrust_cefrB_dazednormal_recalllow
+    - axis: E
+      pwp: PatientsWithPersonality_H1_E3_X1_A1_C1_O1_LB
+      patientsim: PatientSimPatient_persoveranxious_cefrB_dazednormal_recallhigh
+    - axis: X
+      pwp: PatientsWithPersonality_H1_E1_X3_A1_C1_O1_LB
+      patientsim: PatientSimPatient_persverbose_cefrB_dazednormal_recallhigh
+    - axis: A
+      pwp: PatientsWithPersonality_H1_E1_X1_A3_C1_O1_LB
+      patientsim: PatientSimPatient_persimpatient_cefrB_dazednormal_recallhigh
+    - axis: C
+      pwp: PatientsWithPersonality_H1_E1_X1_A1_C3_O1_LB
+      patientsim: PatientSimPatient_persplain_cefrB_dazedhigh_recalllow
+    - axis: O
+      pwp: PatientsWithPersonality_H1_E1_X1_A1_C1_O3_LB
+      patientsim: PatientSimPatient_persdistrust_cefrB_dazednormal_recallhigh
+  common_cases: []
+  rotation_cases:
+    - T348
+    - P493
+    - N965
+    - Y477
+    - Q997
+    - P355
+    - Y768
+    # - X294

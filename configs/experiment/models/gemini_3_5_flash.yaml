@@ -1,0 +1,8 @@
+backend: APILLM
+name: gemini-3.5-flash
+project: ${oc.env:GOOGLE_CLOUD_PROJECT,}
+vertexai: true
+api_key: ${oc.env:GOOGLE_CLOUD_API_KEY,}
+generation_config:
+  thinking_config:
+    thinking_level: HIGH

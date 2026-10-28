@@ -1,0 +1,89 @@
+# @package _global_
+
+defaults:
+  - _self_
+  - models@_flash_lite: gemini_3_1_flash_lite_preview
+  - models@_flash: gemini_3_5_flash
+  - models@_sonnet: claude_sonnet_5_5
+  - models@patient_model: gemini_3_1_flash_lite_low
+  - models@meta_model: ministral_3_14B_instruct_2512
+  - models@judge_model: gemini_3_1_pro_judge
+
+assistant_models:
+  - ${_flash_lite}
+  - ${_flash}
+  - ${_sonnet}
+
+case_list: data/vha/simulation_cases.txt
+profiles_dir: data/vha/extracted_profiles_4c
+statements_path: data/vha/extracted_profiles_4c/injected_statements.csv
+four_c_path: data/vha/four_c_narratives.xlsx
+transcripts_dir: data/vha/Transcripts
+output_dir: results/contextual_care_vha
+n_runs: 3
+concurrency: 24
+
+doctor_arms:
+  - name: weak
+    type: interview
+    max_turns: 8
+    instruction: >-
+      Focus on the medical management of the flagged issues: symptoms, test results,
+      medication doses and side effects. Keep the visit brief.
+  - name: strong
+    type: interview
+    max_turns: 20
+    instruction: >-
+      For each flagged issue, find out what in the patient's life is behind it before deciding
+      on a plan. Ask open questions about why it happens and what gets in the way, e.g. cost,
+      access to care, transportation, understanding of the treatment, health beliefs, family or
+      work demands, emotional state. Do not end the visit until you have asked about the
+      circumstances behind every flagged issue.
+  - name: chart
+    type: chart
+  - name: cues_only
+    type: cues_only
+  - name: real_transcript
+    type: real_transcript
+    transcript: full
+  - name: real_no_plan
+    type: real_transcript
+    transcript: without_care_plan
+  - name: real_patient_only
+    type: real_transcript
+    transcript: patient_only
+
+patient_configs:
+  - patient_type: PatientsWithPersonality
+    params:
+      h: 2
+      e: 1
+      x: 1
+      a: 2
+      c: 2
+      o: 1
+      level: B
+      register: spoken
+      answer_form: 0.45
+
+  - patient_type: PatientsWithPersonality
+    params:
+      h: 2
+      e: 2
+      x: 2
+      a: 2
+      c: 2
+      o: 2
+      level: B
+      register: spoken
+      answer_form: 0.45
+
+  - patient_type: PatientSimPatient
+    params:
+      cefr_type: B
+      personality_type: plain
+      recall_level_type: high
+      dazed_level_type: normal
+
+  - patient_type: AgentClinicPatient
+    params: {}

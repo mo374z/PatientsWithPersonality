@@ -1,0 +1,9 @@
+backend: APILLM
+name: claude-sonnet-5-5
+project: ${oc.env:GOOGLE_CLOUD_PROJECT,}
+generation_config:
+  max_tokens: 8192
+  thinking:
+    type: adaptive
+  output_config:
+    effort: low

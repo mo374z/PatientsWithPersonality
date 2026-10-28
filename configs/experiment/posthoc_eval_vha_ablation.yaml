@@ -1,0 +1,12 @@
+# @package _global_
+
+defaults:
+  - posthoc_eval_vha
+  - _self_
+
+output_dir: results/patient_comparison_vha_ablation
+
+metrics:
+  - time_to_fact
+  - prompted_disclosure
+  - unprompted_leakage

@@ -1,4 +1,18 @@
 backend: VLLM
 name: qwen-3.6-35b-a3b
-endpoint_id: mg-endpoint-daad446e-f24f-4dee-b089-b55d5ed962cc
+endpoint_id: '4099179459465183232'
+project: ${oc.env:GOOGLE_CLOUD_PROJECT,}
 location: europe-west4
+max_retries: 25
+initial_delay: 2.0
+sampling_kwargs:
+  chat_template_kwargs:
+    enable_thinking: false
+on_demand:
+  model_id: '695430109452042240'
+  deployed_model_display_name: qwen-35b-serving
+  machine_type: g2-standard-24
+  accelerator_type: NVIDIA_L4
+  accelerator_count: 2
+  min_replica_count: 1
+  max_replica_count: 3

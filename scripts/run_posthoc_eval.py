@@ -8,7 +8,7 @@ from pathlib import Path
 import hydra
 import pandas as pd
 from omegaconf import DictConfig, OmegaConf
-from tqdm import tqdm
+from tqdm.asyncio import tqdm as atqdm
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -61,12 +61,14 @@ async def rerun_evals(cfg: DictConfig, eval_llm):
     metrics = list(cfg.metrics)
     log.info("Rerunning metrics %s on %d runs", metrics, len(filtered))
 
-    for row_idx, row in tqdm(filtered.iterrows(), total=len(filtered), desc="Runs"):
+    sem = asyncio.Semaphore(int(cfg.concurrency))
+
+    async def evaluate_run(row_idx, row):
         results_dir = Path(row["path"])
         turns_path = results_dir / "turns.csv"
         if not turns_path.exists():
             log.warning("turns.csv missing at %s, skipping", turns_path)
-            continue
+            return
 
         turns_df = pd.read_csv(turns_path)
 
@@ -84,17 +86,18 @@ async def rerun_evals(cfg: DictConfig, eval_llm):
             )
 
         try:
-            turn_res, conv_res, sim_profile = await retry_on_transient_error(
-                lambda: evaluate_conversation(
-                    turns_df,
-                    eval_llm,
-                    case_description=case_desc,
-                    metrics=metrics,
+            async with sem:
+                turn_res, conv_res, sim_profile = await retry_on_transient_error(
+                    lambda: evaluate_conversation(
+                        turns_df,
+                        eval_llm,
+                        case_description=case_desc,
+                        metrics=metrics,
+                    )
                 )
-            )
         except Exception as e:
             log.error("Error re-evaluating %s: %s", results_dir, e, exc_info=True)
-            continue
+            return
 
         turn_res.to_csv(turns_path, index=False)
 
@@ -105,7 +108,17 @@ async def rerun_evals(cfg: DictConfig, eval_llm):
         for key, value in conv_res.items():
             if key not in all_conv_df.columns:
                 all_conv_df[key] = pd.Series([pd.NA] * len(all_conv_df), dtype=object)
+            elif (
+                isinstance(value, (dict, list, str))
+                and all_conv_df[key].dtype != object
+            ):
+                all_conv_df[key] = all_conv_df[key].astype(object)
             all_conv_df.at[row_idx, key] = value
+
+    await atqdm.gather(
+        *(evaluate_run(row_idx, row) for row_idx, row in filtered.iterrows()),
+        desc="Runs",
+    )
 
     all_conv_df.to_csv(conv_res_path, index=False)
     log.info("Updated %s", conv_res_path)

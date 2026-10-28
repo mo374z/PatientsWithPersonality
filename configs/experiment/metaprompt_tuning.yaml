@@ -1,15 +1,33 @@
 defaults:
   - _self_
-  - models@conversational_model: gemini_3_1_flash_lite_preview
+  - models@conversational_model: gemini_3_1_flash_lite_low
   - models@llm_judge_model: gemini_3_1_flash_lite_preview
 
-dataset_path: data/tuning_dataset.csv
+# Tuning runs on the VHA tuning split, held disjoint from the VHA cases used by
+# patient_comparison_vha and the doctor study.
+dataset_path: data/vha_tuning_dataset_v2.csv
 initial_prompts_path: data/tuning_prompts.json
 random_seed: 42
-train_sample_n: 111
-test_sample_n: 50
+reward_concurrency: 12
+register: spoken
+answer_form: 0.45
+# Role tokens are re-sent as the patient system prompt on every conversational
+# turn, so length drives API cost linearly in turns. Penalty is
+# role_length_weight * max(0, role_tokens - role_token_budget) / role_token_budget.
+# Measured on v4: roles of 1600+ tokens score 0.098 better on quality than roles
+# under 700, so a weight above 0.192 would override a genuine quality advantage.
+role_length_weight: 0.25
+role_token_budget: 1100
+# personal_info_penalty is judged on the role TEXT, so a longer role trivially
+# contains more fields, while hallucination and personality — both judged on what
+# the patient actually says — get worse as roles grow. At weight 1.0 it carried
+# 88.8% of the between-prompt ranking variance, making "write more" the dominant
+# objective. At 0.4 the behavioural terms take 56% and length is net-penalised.
+personal_info_weight: 0.4
+train_sample_n: 120
+test_sample_n: 30
 
-task_description: "Generate a latent role description for a realistic patient simulator. Ppersonal information and axes of the HEXACO personality model are appended to the prompt. The generated role is evaluated by downstream multi-turn anamnesis simulation."
+task_description: "Generate a latent role description for a realistic patient simulator. Personal information and axes of the HEXACO personality model are appended to the prompt. The prompt must instruct the model to return the complete role between the tags <role> and </role> and nothing else. The generated role is evaluated by downstream multi-turn anamnesis simulation."
 
 meta_model:
   backend: VLLM
@@ -18,16 +36,22 @@ meta_model:
   engine_kwargs:
     tensor_parallel_size: 1
     gpu_memory_utilization: 0.8
-    max_model_len: 1024
+    max_model_len: 8192
   sampling_kwargs:
     temperature: 0.05
-    max_tokens: 512
+    # Roles that overrun this cap lose their closing </role> tag and score as
+    # invalid, which on v4 cost long-role prompts 14x more than the length
+    # penalty itself. Headroom keeps length priced by the hinge, not the cap.
+    max_tokens: 4096
 
 promptolution:
   optimizer: capo
   eval_strategy: sequential_block
-  n_steps: 99
+  n_steps: 50
   n_subsamples: 20
+  # Penalizes meta-prompt tokens relative to the longest seed prompt (53 tokens),
+  # frozen at population init, so a 300-token offspring pays ~0.29.
+  length_penalty: 0.05
   upper_shots: 0 # we don't use few-shot samples in this tuning setting
 
 quota_retry:
@@ -35,4 +59,4 @@ quota_retry:
   initial_delay_seconds: 20
   max_delay_seconds: 300
 
-output_path: results/metaprompt_tuning
+output_path: results/metaprompt_tuning_vha
