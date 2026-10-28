@@ -1,0 +1,40 @@
+# @package _global_
+
+defaults:
+  - _self_
+  - models@llm_judge_model: gemini_3_1_flash_lite_preview
+
+output_dir: results/patient_comparison_default
+scores_file: personality_ablation.csv
+model_name: gemini-3.1-flash-lite-preview
+concurrency: 16
+
+# anchored: judge prompt of the paper (level criteria paraphrase the persona prompts)
+# neutral: axis name and scale direction only, no wording shared with the persona prompts
+prompt_variants:
+  - anchored
+  - neutral
+
+# 1-indexed inclusive turn ranges; null end = to the end of the conversation
+windows:
+  full: [1, null]
+  turns_1_10: [1, 10]
+  turns_11_20: [11, 20]
+
+patient_names:
+  - PatientsWithPersonality_H2_E1_X1_A2_C2_O1_LB
+  - PatientsWithPersonality_H2_E2_X2_A2_C2_O2_LB
+  - PatientsWithPersonality_H1_E1_X2_A1_C1_O1_LB
+  - PatientsWithPersonality_H3_E1_X1_A1_C1_O1_LB
+  - PatientsWithPersonality_H1_E3_X1_A1_C1_O1_LB
+  - PatientsWithPersonality_H1_E1_X3_A1_C1_O1_LB
+  - PatientsWithPersonality_H1_E1_X1_A3_C1_O1_LB
+  - PatientsWithPersonality_H1_E1_X1_A1_C3_O1_LB
+  - PatientsWithPersonality_H1_E1_X1_A1_C1_O3_LB
+  - PatientSimPatient_persplain_cefrB_dazednormal_recallhigh
+  - PatientSimPatient_persdistrust_cefrB_dazednormal_recalllow
+  - PatientSimPatient_persoveranxious_cefrB_dazednormal_recallhigh
+  - PatientSimPatient_persverbose_cefrB_dazednormal_recallhigh
+  - PatientSimPatient_persimpatient_cefrB_dazednormal_recallhigh
+  - PatientSimPatient_persplain_cefrB_dazedhigh_recalllow
+  - PatientSimPatient_persdistrust_cefrB_dazednormal_recallhigh
