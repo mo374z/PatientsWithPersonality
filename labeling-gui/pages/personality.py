@@ -5,7 +5,12 @@ from dash import html, dcc, Input, Output, State, callback, no_update, ctx
 import data
 import storage
 import assignments
-from components import render_conversation, render_task_header, render_patient_info
+from components import (
+    render_conversation,
+    render_task_header,
+    render_patient_info,
+    render_thank_you,
+)
 
 _NAV_WARNING = "Please read the conversation and submit your assessment before moving to the next one."
 _WARNING_STYLE = {"color": "#e74c3c", "fontSize": "12px", "marginTop": "6px"}
@@ -123,44 +128,6 @@ def layout(user_id: str) -> html.Div:
     )
 
 
-def _thank_you_overlay() -> html.Div:
-    return html.Div(
-        html.Div(
-            [
-                html.Div("🎉", style={"fontSize": "56px", "marginBottom": "12px"}),
-                html.H2(
-                    "Thank you for your time!",
-                    style={"margin": "0 0 10px 0", "color": "#2c3e50"},
-                ),
-                html.P(
-                    "Your labels have been saved. You may now close this window.",
-                    style={"fontSize": "15px", "color": "#555", "margin": 0},
-                ),
-            ],
-            style={
-                "background": "#fff",
-                "padding": "40px 48px",
-                "borderRadius": "12px",
-                "boxShadow": "0 10px 40px rgba(0,0,0,0.25)",
-                "textAlign": "center",
-                "maxWidth": "420px",
-            },
-        ),
-        style={
-            "position": "fixed",
-            "top": 0,
-            "left": 0,
-            "right": 0,
-            "bottom": 0,
-            "background": "rgba(44, 62, 80, 0.55)",
-            "display": "flex",
-            "alignItems": "center",
-            "justifyContent": "center",
-            "zIndex": 1000,
-        },
-    )
-
-
 @callback(
     Output("personality-header", "children"),
     Output("personality-patient-info", "children"),
@@ -195,12 +162,13 @@ def render_personality(idx, user_id):
     task_id = order[idx]
     assignment = task_data["task_assignments"][task_id]
     conv_id = assignment["conv_id"]
-    turns = data.load_conversation(assignment["simulator"], conv_id)
-    turns, offset = data.select_turn_window(turns, f"{user_id}:{conv_id}")
+    turns = data.take_excerpt(
+        data.load_conversation(assignment["simulator"], conv_id), conv_id
+    )
 
     header = render_task_header(idx, len(order), "Personality Evaluation")
     patient_info = render_patient_info(conv_id, data.get_patient_summary(conv_id))
-    conversation = render_conversation(turns, id_prefix="pers-", turn_offset=offset)
+    conversation = render_conversation(turns, id_prefix="pers-")
 
     existing = labels.get(task_id, {})
 
@@ -316,6 +284,7 @@ def navigate_personality(prev_clicks, next_clicks, idx, user_id):
     Output("personality-submit-error", "children"),
     Output("sidebar-trigger", "data", allow_duplicate=True),
     Output("personality-complete-overlay", "children"),
+    Output("url", "pathname", allow_duplicate=True),
     Input("personality-submit", "n_clicks"),
     Input("personality-submit-trigger", "data"),
     State("personality-h", "value"),
@@ -330,11 +299,11 @@ def navigate_personality(prev_clicks, next_clicks, idx, user_id):
 )
 def submit_personality(n_clicks, trigger, h, e, x, a, c, o, idx, user_id):
     if ctx.triggered_id == "personality-submit" and not n_clicks:
-        return no_update, no_update, no_update, no_update, no_update
+        return (no_update,) * 6
     if ctx.triggered_id == "personality-submit-trigger" and not trigger:
-        return no_update, no_update, no_update, no_update, no_update
+        return (no_update,) * 6
     if user_id is None:
-        return no_update, no_update, no_update, no_update, no_update
+        return (no_update,) * 6
 
     params = {"h": h, "e": e, "x": x, "a": a, "c": c, "o": o}
     missing = [k for k, v in params.items() if v is None]
@@ -343,6 +312,7 @@ def submit_personality(n_clicks, trigger, h, e, x, a, c, o, idx, user_id):
             no_update,
             no_update,
             "Please fill in all fields before submitting.",
+            no_update,
             no_update,
             no_update,
         )
@@ -355,12 +325,16 @@ def submit_personality(n_clicks, trigger, h, e, x, a, c, o, idx, user_id):
     task_data.setdefault("labels", {})[task_id] = params
     storage.save_labels(user_id, "personality", task_data)
 
-    is_last = idx == len(order) - 1
+    personality_complete = len(task_data["labels"]) == len(order)
+    realism_done, realism_total = storage.get_progress(user_id, "realism")
+    realism_complete = realism_done == realism_total
+
     next_idx = min(idx + 1, len(order) - 1)
     return (
         next_idx,
         html.Span("✓ Saved", className="submitted-badge"),
         "",
         datetime.now().isoformat(),
-        _thank_you_overlay() if is_last else no_update,
+        render_thank_you() if storage.all_tasks_complete(user_id) else no_update,
+        "/realism" if personality_complete and not realism_complete else no_update,
     )

@@ -1,5 +1,5 @@
 (function () {
-    var ALLOWED = ['ArrowLeft', 'ArrowRight', 'Enter', 'r', 's', 'a', 'b', 't', '1', '2', '3', '4', '5'];
+    var ALLOWED = ['ArrowLeft', 'ArrowRight', 'Enter'];
 
     function isTextEntryTarget(target) {
         if (!target) return false;

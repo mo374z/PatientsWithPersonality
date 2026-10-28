@@ -1,8 +1,8 @@
 import argparse
-from pathlib import Path
 
 from dash import Dash, html, dcc, Input, Output, State, callback, no_update
 
+import assignments
 import data
 import storage
 from components import render_progress_bar
@@ -87,26 +87,18 @@ def _welcome_page() -> html.Div:
     intro = html.Div(
         [
             html.P(
-                "You will evaluate simulated patients in doctor-patient conversations. "
-                "The study has two tasks, available from the sidebar once you log in:",
+                "Some of the patients in these conversations are real people, others are "
+                "simulated. The study has two tasks, available from the sidebar once you "
+                "log in:",
                 style={"marginBottom": "12px"},
             ),
             html.Div(
                 [
                     html.Strong("1. Conversation Realism — "),
                     html.Span(
-                        [
-                            "You are shown one conversation at a time. Decide whether the patient "
-                            "is a real human or an AI simulation, rate your confidence, and assess "
-                            "symptom description realism, information control, and style realism. "
-                            "You can also flag individual patient turns that drove your judgment. ",
-                            html.Br(),
-                            html.Strong("IMPORTANT: "),
-                            "There can be up to two real patient conversations per case, but also none. Your task is ",
-                            html.Strong("not "),
-                            "to find the real conversation per case, "
-                            "but to judge the realism of each conversation independently.",
-                        ]
+                        "Three versions of the same encounter are shown side by side. For "
+                        "each one, say whether the patient sounds real, and if not, what "
+                        "gave it away."
                     ),
                 ],
                 style={"marginBottom": "10px"},
@@ -121,18 +113,25 @@ def _welcome_page() -> html.Div:
                 ],
                 style={"marginBottom": "14px"},
             ),
-            html.P(
+            html.Div(
                 [
-                    html.Strong("What to focus on: "),
-                    "realism cues — medical plausibility, specificity of detail, hesitation and "
-                    "emotional tone, and the naturalness of the phrasing. Do ",
-                    html.Em("not"),
-                    " judge how helpful, complete, or cooperative the patient is.",
+                    html.Strong("Rate the patient, not the doctor. "),
+                    "The doctor's questions differ between the versions and are not part of "
+                    "the judgement — only the patient's replies are. Ask yourself whether "
+                    "a real person would say this: does it hang together medically, is the "
+                    "detail specific, does the wording sound like speech?",
                 ],
-                style={"marginBottom": "8px"},
+                className="important-notice",
             ),
             html.P(
-                "Only a 5-turn window of each conversation is shown — this is intentional.",
+                [
+                    "Any number of the versions can be real — all three, one, or none — so "
+                    "do not try to pick out the real one. Rate each version on its own. Do ",
+                    html.Em("not"),
+                    f" judge how helpful or cooperative the patient is. Only a "
+                    f"{data.get_turn_window_size()}-turn excerpt of each conversation is "
+                    "shown; this is intentional.",
+                ],
                 style={"fontSize": "13px", "color": "#7f8c8d", "marginBottom": "20px"},
             ),
         ],
@@ -147,12 +146,15 @@ def _welcome_page() -> html.Div:
     return html.Div(
         [
             html.H2("Patient Simulator Labeling"),
-            html.P("Enter your anonymous user ID to begin."),
+            html.P(
+                "Pick any anonymous ID (at least 4 letters/digits) and enter it to begin. "
+                "Use the same ID every time so your work is picked up where you left off."
+            ),
             intro,
             dcc.Input(
                 id="user-id-input",
                 type="text",
-                placeholder="Enter user ID...",
+                placeholder="At least 4 letters/digits, e.g. abcd",
                 style={
                     "width": "100%",
                     "padding": "10px",
@@ -193,9 +195,12 @@ def _welcome_page() -> html.Div:
     prevent_initial_call=True,
 )
 def handle_login(n_clicks, n_submit, user_id):
-    if not user_id or len(user_id.strip()) < 3:
-        return no_update, no_update, "User ID must be at least 3 characters."
-    return user_id.strip(), "/realism", ""
+    rater_id = data.normalize_rater_id(user_id)
+    if rater_id is None:
+        return no_update, no_update, "Please enter at least 4 letters/digits, e.g. abcd."
+    for task in storage.TASKS:
+        assignments.get_assignments(rater_id, task)
+    return rater_id, "/realism", ""
 
 
 @callback(
@@ -229,14 +234,13 @@ if __name__ == "__main__":
     parser.add_argument("--results-dir", required=True)
     parser.add_argument("--study-config", required=True)
     parser.add_argument("--data-dir", default=None)
-    parser.add_argument("--labels-dir", default=None)
+    parser.add_argument("--labels-dir", required=True)
     parser.add_argument("--port", type=int, default=8050)
     parser.add_argument("--debug", action="store_true")
     args = parser.parse_args()
 
     data.init(args.results_dir, args.data_dir)
     data.init_study_config(args.study_config)
-    labels_dir = args.labels_dir or str(Path(__file__).parent / "labels")
-    storage.init(labels_dir)
+    storage.init(args.labels_dir)
 
     app.run(debug=args.debug, port=args.port, host="0.0.0.0")
