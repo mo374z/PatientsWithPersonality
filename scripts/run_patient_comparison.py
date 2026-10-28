@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import asyncio
+from copy import deepcopy
 import json
 import logging
 import os
@@ -20,30 +21,14 @@ from patient_simulator.misc.utils import (
 )
 from patient_simulator.eval import evaluate_conversation
 from patient_simulator.patients import (
-    CraftMDPatient,
-    AgentClinicPatient,
-    StateAwarePatient,
-    PatientSimPatient,
-    PatientsWithPersonality,
+    PATIENT_TYPE_MAP,
     BaselinePatient,
-    VirtualPatient,
+    PatientsWithPersonality,
     RealPatient,
 )
 
 log = logging.getLogger(__name__)
 logging.getLogger("mistral_common").setLevel(logging.WARNING)
-
-
-PATIENT_TYPE_MAP = {
-    "RealPatient": RealPatient,
-    "CraftMDPatient": CraftMDPatient,
-    "AgentClinicPatient": AgentClinicPatient,
-    "StateAwarePatient": StateAwarePatient,
-    "PatientSimPatient": PatientSimPatient,
-    "PatientsWithPersonality": PatientsWithPersonality,
-    "BaselinePatient": BaselinePatient,
-    "VirtualPatient": VirtualPatient,
-}
 
 
 async def run_simulations(
@@ -55,8 +40,10 @@ async def run_simulations(
     eval_llm,
 ):
     max_turns = cfg.get("max_turns", None)
+    model_name_short = cfg.conversational_model.name.split("/")[-1]
 
-    for c in tqdm(conversations, desc="Conversations"):
+    cases = []
+    for c in conversations:
         case_desc_path = f"{cfg.case_descriptions_dir}/{c}.json"
         if not Path(case_desc_path).exists():
             log.warning("Case description not found at %s", case_desc_path)
@@ -71,121 +58,144 @@ async def run_simulations(
             continue
 
         conv = parse_transcript_file(conv_path)
-
         if max_turns is not None:
-            conv = conv.head(max_turns)
+            conv = conv[:max_turns]
 
-        for patient_class, params in tqdm(
-            patient_configs, leave=False, position=1, desc="Patient Configs"
-        ):
-            run_params = dict(params)
-            align_doctor = True
-            if patient_class == BaselinePatient and "real_responses" not in run_params:
-                run_params["real_responses"] = [
-                    text for speaker, text in conv if speaker == "PATIENT"
-                ]
+        cases.append((c, case_desc, conv))
 
-            if patient_class == RealPatient and "real_responses" not in run_params:
-                run_params["real_responses"] = [
-                    text for speaker, text in conv if speaker == "PATIENT"
-                ]
-                align_doctor = False
+    conv_res_path = Path(f"{cfg.output_dir}/all_conversations.csv")
+    recorded = (
+        set(pd.read_csv(conv_res_path)["path"].astype(str))
+        if conv_res_path.exists()
+        else set()
+    )
 
-            if patient_class == PatientsWithPersonality:
-                run_params["meta_llm"] = meta_llm
-            patient = patient_class(case_desc, llm=conversational_llm, **run_params)
-            patient_name = patient.__name__(short=False)
-            model_name_short = cfg.conversational_model.name.split("/")[-1]
-            results_dir = f"{cfg.output_dir}/{patient_name}/{model_name_short}/{c}"
-            os.makedirs(results_dir, exist_ok=True)
+    semaphore = asyncio.Semaphore(int(cfg.simulation_concurrency))
+    write_lock = asyncio.Lock()
+    progress = tqdm(total=len(cases) * len(patient_configs), desc="Simulations")
 
-            turns_path = Path(f"{results_dir}/turns.csv")
-            conv_res_path = Path(f"{cfg.output_dir}/all_conversations.csv")
-
-            already_recorded = (
-                conv_res_path.exists()
-                and str(results_dir) in pd.read_csv(conv_res_path)["path"].values
-            )
-            if already_recorded:
-                continue
-
-            if not turns_path.exists() or turns_path.stat().st_size <= 1:
-                try:
-                    sim_conv = await retry_on_transient_error(
-                        lambda: patient.simulate_conversation(
-                            conv=conv,
-                            path=results_dir,
-                            align_doctor=align_doctor,
-                        )
-                    )
-                except Exception as e:
-                    log.error(
-                        "Error simulating conversation %s with %s: %s",
-                        c,
-                        patient_name,
-                        e,
-                        exc_info=True,
-                    )
-                    continue
-                if patient_class == PatientsWithPersonality:
-                    with open(f"{results_dir}/fuzzy_history.json", "w") as f:
-                        json.dump(patient.fuzzy_history, f)
-                    with open(f"{results_dir}/downplayed_fields.json", "w") as f:
-                        json.dump(patient.downplayed_fields, f)
-            else:
-                sim_conv = pd.read_csv(turns_path)
-
-            expected_patient_turns = sum(
-                1 for speaker, _ in conv if speaker == "PATIENT"
-            )
-            if len(sim_conv) != expected_patient_turns:
-                log.warning(
-                    "Skipping eval for %s / %s: expected %d turns, got %d",
-                    c,
-                    patient_name,
-                    expected_patient_turns,
-                    len(sim_conv),
-                )
-                continue
-
-            sim_conv = sim_conv[
-                ["doctor_question", "real_response", "simulated_response"]
+    async def simulate(c, case_desc, conv, patient_class, params):
+        run_params = dict(params)
+        align_doctor = cfg.align_doctor
+        if patient_class == BaselinePatient and "real_responses" not in run_params:
+            run_params["real_responses"] = [
+                text for speaker, text in conv if speaker == "PATIENT"
             ]
+
+        if patient_class == RealPatient and "real_responses" not in run_params:
+            run_params["real_responses"] = [
+                text for speaker, text in conv if speaker == "PATIENT"
+            ]
+            align_doctor = False
+
+        if patient_class == PatientsWithPersonality:
+            run_params["meta_llm"] = meta_llm
+
+        patient = patient_class(
+            deepcopy(case_desc), llm=conversational_llm, **run_params
+        )
+        patient_name = patient.__name__(short=False)
+        results_dir = f"{cfg.output_dir}/{patient_name}/{model_name_short}/{c}"
+        if results_dir in recorded:
+            return
+
+        os.makedirs(results_dir, exist_ok=True)
+        turns_path = Path(f"{results_dir}/turns.csv")
+
+        if not turns_path.exists() or turns_path.stat().st_size <= 1:
             try:
-                turn_res, conv_res, sim_profile = await retry_on_transient_error(
-                    lambda: evaluate_conversation(
-                        sim_conv, eval_llm, case_description=case_desc
+                sim_conv = await retry_on_transient_error(
+                    lambda: patient.simulate_conversation(
+                        conv=conv,
+                        path=results_dir,
+                        align_doctor=align_doctor,
                     )
                 )
             except Exception as e:
                 log.error(
-                    "Error evaluating conversation %s with %s: %s",
+                    "Error simulating conversation %s with %s: %s",
                     c,
                     patient_name,
                     e,
                     exc_info=True,
                 )
-                continue
+                return
+            if patient_class == PatientsWithPersonality:
+                with open(f"{results_dir}/fuzzy_history.json", "w") as f:
+                    json.dump(patient.fuzzy_history, f)
+                with open(f"{results_dir}/downplayed_fields.json", "w") as f:
+                    json.dump(patient.downplayed_fields, f)
+        else:
+            sim_conv = pd.read_csv(turns_path)
 
-            turn_res.to_csv(turns_path, index=False)
-            with open(f"{results_dir}/sim_profile.json", "w") as f:
-                json.dump(sim_profile, f, indent=2)
+        expected_patient_turns = sum(1 for speaker, _ in conv if speaker == "PATIENT")
+        if len(sim_conv) != expected_patient_turns:
+            log.warning(
+                "Skipping eval for %s / %s: expected %d turns, got %d",
+                c,
+                patient_name,
+                expected_patient_turns,
+                len(sim_conv),
+            )
+            return
 
-            conv_res["patient_name"] = patient_name
-            conv_res["patient_type"] = patient_class.__name__
-            conv_res["model_name"] = model_name_short
-            conv_res["conversation_name"] = c
-            for key, value in params.items():
-                conv_res[f"param_{key}"] = value
-            conv_res["path"] = results_dir
+        sim_conv = sim_conv[["doctor_question", "real_response", "simulated_response"]]
+        try:
+            turn_res, conv_res, sim_profile = await retry_on_transient_error(
+                lambda: evaluate_conversation(
+                    sim_conv,
+                    eval_llm,
+                    case_description=case_desc,
+                    metrics=cfg.get("metrics"),
+                )
+            )
+        except Exception as e:
+            log.error(
+                "Error evaluating conversation %s with %s: %s",
+                c,
+                patient_name,
+                e,
+                exc_info=True,
+            )
+            return
 
-            new_row = pd.DataFrame([conv_res])
+        turn_res.to_csv(turns_path, index=False)
+        with open(f"{results_dir}/sim_profile.json", "w") as f:
+            json.dump(sim_profile, f, indent=2)
+
+        conv_res["patient_name"] = patient_name
+        conv_res["patient_type"] = patient_class.__name__
+        conv_res["model_name"] = model_name_short
+        conv_res["conversation_name"] = c
+        for key, value in params.items():
+            conv_res[f"param_{key}"] = value
+        conv_res["path"] = results_dir
+
+        new_row = pd.DataFrame([conv_res])
+        async with write_lock:
             if conv_res_path.exists():
                 pd.concat(
                     [pd.read_csv(conv_res_path), new_row], ignore_index=True
                 ).to_csv(conv_res_path, index=False)
             else:
                 new_row.to_csv(conv_res_path, index=False)
+            recorded.add(results_dir)
+
+    async def guarded(*args):
+        async with semaphore:
+            try:
+                await simulate(*args)
+            finally:
+                progress.update(1)
+
+    await asyncio.gather(
+        *(
+            guarded(c, case_desc, conv, patient_class, params)
+            for c, case_desc, conv in cases
+            for patient_class, params in patient_configs
+        )
+    )
+    progress.close()
 
 
 @hydra.main(
@@ -229,8 +239,11 @@ def main(cfg: DictConfig):
     if cfg.get("max_turns"):
         log.info("Max turns per conversation: %d", cfg.max_turns)
 
+    needs_meta_llm = any(
+        patient_class == PatientsWithPersonality for patient_class, _ in patient_configs
+    )
     conversational_llm = create_llm_instance(cfg.conversational_model)
-    meta_llm = create_llm_instance(cfg.meta_model)
+    meta_llm = create_llm_instance(cfg.meta_model) if needs_meta_llm else None
     eval_llm = create_llm_instance(cfg.llm_judge_model)
 
     asyncio.run(
@@ -244,7 +257,7 @@ def main(cfg: DictConfig):
         (meta_llm, cfg.meta_model),
         (eval_llm, cfg.llm_judge_model),
     ]:
-        if model_cfg.backend == "VLLM":
+        if llm_instance is not None and model_cfg.backend == "VLLM":
             llm_instance.cleanup()
 
     log.info("Simulations complete!")

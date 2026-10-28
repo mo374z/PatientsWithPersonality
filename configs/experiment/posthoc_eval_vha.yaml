@@ -1,0 +1,23 @@
+# @package _global_
+
+defaults:
+  - _self_
+  - models@llm_judge_model: gemini_3_1_flash_lite_preview
+
+output_dir: results/patient_comparison_vha
+concurrency: 24
+case_descriptions_dir: data/vha/extracted_profiles
+
+filters:
+
+metrics:
+  - relevance
+  - realism_content
+  - realism_judge
+  - realism_style
+  - persona_consistency
+  - profile_fidelity
+  - personality_reconstruction
+  - time_to_fact
+  - prompted_disclosure
+  - unprompted_leakage

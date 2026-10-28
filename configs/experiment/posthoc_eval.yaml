@@ -5,6 +5,7 @@ defaults:
   - models@llm_judge_model: gemini_3_1_flash_lite_preview
 
 output_dir: results/patient_comparison_default
+concurrency: 8
 case_descriptions_dir: data/aci_bench/extracted_profiles
 
 filters:
