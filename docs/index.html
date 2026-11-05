@@ -4,10 +4,42 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Patients With Personality</title>
+  <meta name="description" content="PatientsWithPersonality (PWP) is an LLM patient simulator that parametrizes behavior over HEXACO personality and discloses case information selectively across turns, the way real patients do.">
+  <link rel="canonical" href="https://mo374z.github.io/PatientsWithPersonality/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://mo374z.github.io/PatientsWithPersonality/">
   <meta property="og:title" content="Patients With Personality">
   <meta property="og:description" content="Realistic Patient Simulation through Controlled Diversity and Selective Disclosure.">
-  <meta property="og:image" content="static/images/framework.png">
+  <meta property="og:image" content="https://mo374z.github.io/PatientsWithPersonality/static/images/framework.png">
   <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Patients With Personality">
+  <meta name="twitter:description" content="Realistic Patient Simulation through Controlled Diversity and Selective Disclosure.">
+  <meta name="twitter:image" content="https://mo374z.github.io/PatientsWithPersonality/static/images/framework.png">
+
+  <meta name="citation_title" content="Patients With Personality: Realistic Patient Simulation through Controlled Diversity and Selective Disclosure">
+  <meta name="citation_author" content="Schlager, Moritz">
+  <meta name="citation_author" content="Jungmann, Friederike">
+  <meta name="citation_author" content="Schmidgall, Samuel">
+  <meta name="citation_author" content="Raffler, Philipp">
+  <meta name="citation_author" content="Hartl, Franziska">
+  <meta name="citation_author" content="Wende, Eva">
+  <meta name="citation_author" content="Roßmüller, Paula">
+  <meta name="citation_author" content="Ketzer, Conrad">
+  <meta name="citation_author" content="Thompson, Matthew">
+  <meta name="citation_author" content="Chen, Justin Anthony">
+  <meta name="citation_author" content="Chen, Christina">
+  <meta name="citation_author" content="Hassidim, Avinatan">
+  <meta name="citation_author" content="Webster, Dale R.">
+  <meta name="citation_author" content="Matias, Yossi">
+  <meta name="citation_author" content="Liu, Yun">
+  <meta name="citation_author" content="Rueckert, Daniel">
+  <meta name="citation_author" content="Schaekermann, Mike">
+  <meta name="citation_author" content="Hager, Paul">
+  <meta name="citation_publication_date" content="2026">
+  <meta name="citation_conference_title" content="Machine Learning for Health (ML4H)">
+  <meta name="citation_arxiv_id" content="2606.17441">
+  <meta name="citation_abstract_html_url" content="https://arxiv.org/abs/2606.17441">
+  <meta name="citation_pdf_url" content="https://arxiv.org/pdf/2606.17441">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Newsreader:ital,opsz@0,6..72;1,6..72&display=swap" rel="stylesheet">
@@ -231,12 +263,7 @@
       .bubble, .verdict { opacity: 1 !important; transform: none !important; transition: none; }
     }
 
-    .demo-frame {
-      width: 100%; height: min(860px, 85vh); display: block;
-      border: 1px solid var(--border); border-radius: 14px; background: #fff;
-    }
     .demo-note { text-align: center; color: var(--muted); font-size: 0.9rem; margin-top: 12px; }
-    .demo-note a { color: var(--accent-dark); }
     .numbers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; max-width: 880px; margin: 28px auto 0; }
     @media (max-width: 720px) { .numbers { grid-template-columns: 1fr; } }
     .number { text-align: center; border: 1px solid var(--border); border-radius: 12px; background: #fff; padding: 16px; }
@@ -268,11 +295,9 @@
       <p class="venue">Machine Learning for Health (ML4H) 2026 &middot; Proceedings Track</p>
 
       <div class="buttons">
-        <a class="btn" href="https://arxiv.org/abs/2606.17441"><i class="fas fa-file-lines"></i> Paper</a>
-        <a class="btn alt" href="https://arxiv.org/pdf/2606.17441"><i class="fas fa-file-pdf"></i> PDF</a>
-        <a class="btn accent" href="https://github.com/mo374z/PatientsWithPersonality"><i class="fab fa-github"></i> Code</a>
-        <a class="btn accent" href="#demo"><i class="fas fa-comments"></i> Live demo</a>
-        <a class="btn alt" href="#bibtex"><i class="fas fa-quote-right"></i> BibTeX</a>
+        <a class="btn alt" href="https://arxiv.org/abs/2606.17441"><i class="fas fa-file-lines"></i> Paper</a>
+        <a class="btn" href="https://github.com/mo374z/PatientsWithPersonality"><i class="fab fa-github"></i> Code</a>
+        <a class="btn accent" href="https://patient-simulator-demo-4os25b5fpq-ew.a.run.app/" target="_blank" rel="noopener"><i class="fas fa-comments"></i> Live Demo</a>
       </div>
     </div>
   </header>
@@ -373,7 +398,7 @@
         <div class="card">
           <div class="ico"><i class="fas fa-comments"></i></div>
           <h3>Try it yourself</h3>
-          <p>Configure a patient&rsquo;s personality and take a history in the <a href="#demo">live demo</a>; the simulator code is open source.</p>
+          <p>Configure a patient&rsquo;s personality and take a history in the <a href="https://patient-simulator-demo-4os25b5fpq-ew.a.run.app/" target="_blank" rel="noopener">live demo</a>; the simulator code is open source.</p>
         </div>
       </div>
     </div>
@@ -531,11 +556,12 @@
           Flash-Lite and scales to zero when idle, so the first visit may take a few seconds to wake up.
         </p>
       </div>
-      <iframe class="demo-frame" src="https://patient-simulator-demo-4os25b5fpq-ew.a.run.app/?embed=true" title="PatientsWithPersonality live demo" loading="lazy"></iframe>
+      <div class="buttons">
+        <a class="btn accent" href="https://patient-simulator-demo-4os25b5fpq-ew.a.run.app/" target="_blank" rel="noopener"><i class="fas fa-comments"></i> Open the live demo</a>
+      </div>
       <p class="demo-note">
         Conversations are limited per session and day and are logged for research. The cases are de-identified vignettes;
         the simulator is a research prototype and gives no medical advice.
-        <a href="https://patient-simulator-demo-4os25b5fpq-ew.a.run.app/" target="_blank" rel="noopener">Open in a new tab</a>
       </p>
     </div>
   </section>
