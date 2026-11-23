@@ -153,38 +153,27 @@
       max-width: 820px; margin-left: auto; margin-right: auto;
     }
     figcaption b { color: var(--fg); }
+    figcaption a { color: var(--accent-dark); }
     .fig-sm img { width: auto; max-width: 100%; max-height: 460px; margin: 0 auto; }
 
-    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: center; }
     @media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } }
 
-    .highlights { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-    @media (max-width: 720px) { .highlights { grid-template-columns: 1fr; } }
-    .card {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 14px; padding: 22px;
-    }
-    .card .ico {
-      width: 40px; height: 40px; border-radius: 10px;
-      display: grid; place-items: center; font-size: 18px;
-      background: rgba(31,158,135,0.12); color: var(--accent-dark);
-      margin-bottom: 12px;
-    }
-    .card h3 { margin: 0 0 6px; font-size: 1.05rem; }
-    .card p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+    .claim { margin-top: 48px; }
+    .claim h3 { font-size: 1.2rem; margin: 0 0 8px; }
+    .claim p { margin: 0; color: #2b2b2b; font-size: 1.05rem; }
 
-    .hexaco { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-    @media (max-width: 720px) { .hexaco { grid-template-columns: 1fr; } }
+    .hexaco { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-top: 28px; }
+    @media (max-width: 720px) { .hexaco { grid-template-columns: repeat(3, 1fr); } }
     .trait {
-      border: 1px solid var(--border); border-radius: 12px; padding: 16px;
-      background: #fff;
+      border: 1px solid var(--border); border-radius: 12px; padding: 12px;
+      background: #fff; text-align: center;
     }
     .trait .letter {
       font-family: 'Newsreader', serif; font-size: 1.6rem; font-weight: 600;
       color: var(--accent-dark); line-height: 1;
     }
-    .trait .name { font-weight: 600; font-size: 0.95rem; margin: 6px 0 4px; }
-    .trait .desc { color: var(--muted); font-size: 0.88rem; }
+    .trait .name { font-size: 0.85rem; color: var(--muted); margin-top: 6px; }
 
     pre {
       background: #1c1d22; color: #e6e6e6; border-radius: 12px;
@@ -262,12 +251,39 @@
       .bubble, .verdict { opacity: 1 !important; transform: none !important; transition: none; }
     }
 
+    .demo-frame {
+      height: min(780px, 85vh); border: 1px solid var(--border); border-radius: 16px;
+      background: #fff; overflow: hidden; position: relative;
+    }
+    .demo-frame iframe { width: 100%; height: 100%; border: 0; display: block; }
+    .demo-loader {
+      position: absolute; inset: 0; background: #fff;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+      color: var(--muted); font-size: 0.95rem;
+      transition: opacity .5s ease, visibility .5s ease;
+    }
+    .demo-frame.loaded .demo-loader { opacity: 0; visibility: hidden; }
+    .typing {
+      display: flex; gap: 7px; padding: 16px 20px;
+      background: #a7d8c8; border-radius: 18px; border-bottom-right-radius: 5px;
+    }
+    .typing span {
+      width: 10px; height: 10px; border-radius: 50%; background: var(--accent-dark);
+      animation: typing 1.2s infinite ease-in-out;
+    }
+    .typing span:nth-child(2) { animation-delay: .15s; }
+    .typing span:nth-child(3) { animation-delay: .3s; }
+    @keyframes typing {
+      0%, 60%, 100% { transform: translateY(0); opacity: .45; }
+      30% { transform: translateY(-7px); opacity: 1; }
+    }
+    @media (prefers-reduced-motion: reduce) { .typing span { animation: none; } }
     .demo-note { text-align: center; color: var(--muted); font-size: 0.9rem; margin-top: 12px; }
-    .numbers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; max-width: 880px; margin: 28px auto 0; }
-    @media (max-width: 720px) { .numbers { grid-template-columns: 1fr; } }
-    .number { text-align: center; border: 1px solid var(--border); border-radius: 12px; background: #fff; padding: 16px; }
-    .number b { display: block; font-family: 'Newsreader', Georgia, serif; font-size: 1.9rem; color: var(--accent-dark); line-height: 1.1; }
-    .number span { color: var(--muted); font-size: 0.88rem; }
+    .demo-note a { color: var(--accent-dark); }
+    .numbers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 20px; }
+    .number { text-align: center; border: 1px solid var(--border); border-radius: 12px; background: #fff; padding: 14px; }
+    .number b { display: block; font-family: 'Newsreader', Georgia, serif; font-size: 1.7rem; color: var(--accent-dark); line-height: 1.1; }
+    .number span { color: var(--muted); font-size: 0.85rem; }
   </style>
 </head>
 <body>
@@ -294,19 +310,19 @@
       <p class="venue">Machine Learning for Health (ML4H) 2026 &middot; Proceedings Track</p>
 
       <div class="buttons">
+        <a class="btn accent" href="#demo"><i class="fas fa-comments"></i> Try the Demo</a>
         <a class="btn alt" href="https://arxiv.org/abs/2606.17441"><i class="fas fa-file-lines"></i> Paper</a>
         <a class="btn" href="https://github.com/mo374z/PatientsWithPersonality"><i class="fab fa-github"></i> Code</a>
-        <a class="btn accent" href="https://patient-simulator-demo-4os25b5fpq-ew.a.run.app/" target="_blank" rel="noopener"><i class="fas fa-comments"></i> Live Demo</a>
       </div>
     </div>
   </header>
 
   <section class="teaser" style="border-bottom:none; padding-top:48px;">
     <div class="container">
-      <p class="statement">Patient simulators don&rsquo;t act like humans&hellip; <span class="turn">we fix it.</span></p>
+      <p class="statement">Patient simulators don&rsquo;t act like humans&hellip; <span class="turn">until now.</span></p>
       <p class="abstract" style="text-align:center; margin:0 auto 34px;">
-        Prompted with a single question, current simulators dump the entire case information available to them in one overly cooperative turn.
-        Our framework PatientsWithPersonality (PWP) assures that answers only refer to what is asked disclosing selectively across turns, the way real patients do.
+        Current simulators dump the whole case in one overly cooperative turn.
+        PWP answers only what is asked and discloses selectively across turns, the way real patients do.
       </p>
       <div class="chat-compare">
         <div class="chat-col">
@@ -339,105 +355,44 @@
     </div>
   </section>
 
-  <section>
+  <section id="demo">
     <div class="container">
-      <h2>Summary</h2>
-      <div class="abstract">
-        <p>
-          Testing clinical LLMs under realistic conditions usually means slow, expensive user studies. Patient simulators
-          promise a scalable alternative, but existing ones overshare information and miss the variability of real patient
-          behavior, so benchmarks built on them overestimate clinical capability.
-        </p>
-        <p style="margin-top:16px;">
-          <b>PatientsWithPersonality (PWP)</b> parametrizes each simulated patient over <b>HEXACO</b>, the six-dimensional
-          model psychologists use to describe personality, on top of a latent patient state. A behavioral role controls how
-          the patient talks; a query-conditioned disclosure grid controls what it can reveal at each turn.
-        </p>
-        <p style="margin-top:16px;">
-          We evaluate PWP in the first direct comparison of patient simulators under a shared protocol, anchored in
-          transcripts of <b>real physician&ndash;patient encounters</b>. Clinicians judge PWP conversations realistic at
-          least as often as the recorded encounters themselves and far more often than prior simulators, and almost never
-          flag them as &ldquo;too informative&rdquo;. PWP reproduces the disclosure pacing of real patients, its configured
-          traits are recoverable, and on a downstream contextual-care benchmark it stays closest to the difficulty of the
-          real visit where prior simulators make the task too easy.
-        </p>
+      <h2>Try It Yourself</h2>
+      <p class="abstract" style="text-align:center; margin:0 auto 24px;">
+        Pick a case, set the personality sliders, and take a history from a simulated patient.
+      </p>
+      <div class="demo-frame">
+        <iframe src="https://patient-simulator-demo-4os25b5fpq-ew.a.run.app/?embed=true" title="PatientsWithPersonality live demo"></iframe>
+        <div class="demo-loader">
+          <div class="typing"><span></span><span></span><span></span></div>
+          Waking up the patient&hellip;
+        </div>
       </div>
+      <p class="demo-note">
+        Waking up the demo can take a few seconds &middot; <a href="https://patient-simulator-demo-4os25b5fpq-ew.a.run.app/" target="_blank" rel="noopener">open in a new tab</a><br>
+        Conversations are limited and logged for research. The cases are de-identified vignettes; no medical advice.
+      </p>
     </div>
   </section>
 
   <section>
     <div class="container">
-      <h2>Highlights</h2>
-      <div class="highlights">
-        <div class="card">
-          <div class="ico"><i class="fas fa-dna"></i></div>
-          <h3>Parametrizable personas</h3>
-          <p>Six HEXACO axes plus language proficiency give fine-grained control over conversational style, cooperativeness, and disclosure.</p>
-        </div>
-        <div class="card">
-          <div class="ico"><i class="fas fa-comment-slash"></i></div>
-          <h3>Selective disclosure</h3>
-          <p>Unrequested facts never enter the prompt; PWP tracks the disclosure pacing of real patients while baselines front-load the case.</p>
-        </div>
-        <div class="card">
-          <div class="ico"><i class="fas fa-user-doctor"></i></div>
-          <h3>Judged realistic by clinicians</h3>
-          <p>In a blinded study on real VHA encounters, PWP is judged realistic in 75% of conversations, against 47% for the recorded encounters and 30% or less for prior simulators.</p>
-        </div>
-        <div class="card">
-          <div class="ico"><i class="fas fa-arrows-left-right-to-line"></i></div>
-          <h3>Recoverable, diverse personalities</h3>
-          <p>Clinicians and two independent LLM judges recover the configured traits, and PWP personas span a wider behavioral range than PatientSim on 25 of 30 cases.</p>
-        </div>
-        <div class="card">
-          <div class="ico"><i class="fas fa-scale-balanced"></i></div>
-          <h3>Realistic benchmark difficulty</h3>
-          <p>On a contextual-care benchmark, PWP comes closest to the error rate of the real visit across three LLMs; prior simulators make the task too easy.</p>
-        </div>
-        <div class="card">
-          <div class="ico"><i class="fas fa-comments"></i></div>
-          <h3>Try it yourself</h3>
-          <p>Configure a patient&rsquo;s personality and take a history in the <a href="https://patient-simulator-demo-4os25b5fpq-ew.a.run.app/" target="_blank" rel="noopener">live demo</a>; the simulator code is open source.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <div class="container">
-      <h2>Our Framework</h2>
-      <h3>Parametrizable Personality Space</h3>
-      <p>
-        Each simulated patient is parametrized over the six axes of the HEXACO model of personality, a CEFR language level,
-        and a conversation type (spoken or written). Honesty-Humility and Conscientiousness gate <i>what</i> the patient
-        discloses; Emotionality, eXtraversion and Openness shape <i>how</i> it communicates; Agreeableness sets its attitude
-        towards the clinician.
+      <h2>Framework</h2>
+      <p class="abstract" style="text-align:center;">
+        Each patient is parametrized over the six HEXACO personality axes. A latent patient state decides
+        <i>how</i> the patient talks and <i>what</i> it may reveal at each turn.
       </p>
       <div class="hexaco">
-        <div class="trait"><div class="letter">H</div><div class="name">Honesty-Humility</div><div class="desc">Truthful, downplayed, or denied disclosure of sensitive habits.</div></div>
-        <div class="trait"><div class="letter">E</div><div class="name">Emotionality</div><div class="desc">Emotional state driving demeanor across the conversation.</div></div>
-        <div class="trait"><div class="letter">X</div><div class="name">eXtraversion</div><div class="desc">Talkativeness and tendency toward conversational tangents.</div></div>
-        <div class="trait"><div class="letter">A</div><div class="name">Agreeableness</div><div class="desc">Cooperativeness with, or skepticism of, the clinician.</div></div>
-        <div class="trait"><div class="letter">C</div><div class="name">Conscientiousness</div><div class="desc">Precision of medical-history recall, unmasked by targeted questions.</div></div>
-        <div class="trait"><div class="letter">O</div><div class="name">Openness</div><div class="desc">Prior beliefs such as a fixed self-diagnosis.</div></div>
+        <div class="trait"><div class="letter">H</div><div class="name">Honesty-Humility</div></div>
+        <div class="trait"><div class="letter">E</div><div class="name">Emotionality</div></div>
+        <div class="trait"><div class="letter">X</div><div class="name">eXtraversion</div></div>
+        <div class="trait"><div class="letter">A</div><div class="name">Agreeableness</div></div>
+        <div class="trait"><div class="letter">C</div><div class="name">Conscientiousness</div></div>
+        <div class="trait"><div class="letter">O</div><div class="name">Openness</div></div>
       </div>
-      <h3 style="margin-top:28px;">Initializing the Patient State</h3>
-      <p>
-        A case description of personal background, lifestyle habits, and medical facts is combined with the parametrization
-        into a <b>behavioral role</b> (tangent topics, emotional state, prior belief), synthesized by a latent-role prompt
-        tuned with evolutionary prompt optimization, and a <b>disclosure grid</b> that holds every lifestyle and medical fact
-        in personality-dependent variants.
-      </p>
-      <h3>Simulating Patient Responses</h3>
-      <p>
-        For each clinician turn, a meta-LLM classifies which case fields are requested and whether the turn is a yes/no
-        question, an open question, or a statement. Only the requested fields enter the prompt, in the variant the latent
-        state selects, and the conversational LLM generates the answer. Across the conversation, targeted follow-ups
-        progressively unmask what the patient first recalled only vaguely.
-      </p>
       <figure style="margin-top:32px;">
         <img src="static/images/framework.png" alt="PWP framework overview">
-        <figcaption>Overview of the PWP framework: initialization turns the parametrization and case description into a latent patient state, which conditions every generated response.</figcaption>
+        <figcaption>Overview of the PWP framework. Details in the <a href="https://arxiv.org/abs/2606.17441">paper</a>.</figcaption>
       </figure>
     </div>
   </section>
@@ -445,139 +400,55 @@
   <section>
     <div class="container">
       <h2>Results</h2>
-      <div class="abstract">
-        <p>
-          All simulators replay the physician turns of 30 real primary-care encounters from the US Department of Veterans
-          Affairs, so every simulated answer can be compared with what the real patient said. Nine resident clinicians rated
-          540 blinded conversations.
-        </p>
-      </div>
+      <p class="abstract" style="text-align:center;">
+        Evaluated on 30 real primary-care encounters from the US Department of Veterans Affairs; nine clinicians rated 540 blinded conversations.
+      </p>
 
-      <div class="grid2" style="margin-top:32px;">
+      <div class="grid2 claim">
+        <div>
+          <h3>Judged realistic by clinicians</h3>
+          <p>PWP is judged realistic more often than the recorded encounters and prior simulators, and almost never flagged as too informative.</p>
+          <div class="numbers">
+            <div class="number"><b>75%</b><span>PWP</span></div>
+            <div class="number"><b>47%</b><span>real encounters</span></div>
+            <div class="number"><b>&le;30%</b><span>prior simulators</span></div>
+          </div>
+        </div>
         <figure class="fig-sm">
           <img src="static/images/realism_fraction.png" alt="Fraction of conversations judged realistic per patient type">
-          <figcaption>Fraction of conversations clinicians judged realistic (mixed-effects fit, 95% intervals).</figcaption>
+          <figcaption>Fraction of conversations judged realistic.</figcaption>
         </figure>
-        <figure class="fig-sm">
-          <img src="static/images/realism_reason_scatter.png" alt="Avoids oversharing versus linguistically natural">
-          <figcaption>The two dominant rejection reasons; the gauge shows the overall fraction judged realistic.</figcaption>
-        </figure>
-      </div>
-      <div class="abstract" style="margin-top:20px;">
-        <p>
-          Clinicians judged PWP realistic in 75.0% of conversations, ahead of the recorded encounters (46.7%), their LLM
-          rephrasing (31.1%), PatientSim (30.0%) and AgentClinic (11.1%). PWP was flagged as <em>too informative</em> once in
-          180 conversations, against 24/90 for PatientSim and 56/90 for AgentClinic. Transcribed in-person speech loses
-          overlapping and cut-off turns, which some clinicians read as broken. Without the one rater who assumed written
-          chats, agreement rises (Gwet&rsquo;s AC1 0.28 &rarr; 0.38) and every comparison stays significant. Leaving out in
-          addition the columns rejected as inconsistent with prior context raises the recorded encounters to 66.1%, but PWP
-          rises as well (87.4%).
-        </p>
       </div>
 
-      <figure style="margin-top:52px;">
-        <img src="static/images/dialogue_metrics.png" alt="Per-conversation differences to the real transcript">
-        <figcaption>Per-conversation difference between each simulator and the real transcript; zero marks agreement.</figcaption>
-      </figure>
-      <div class="grid2" style="margin-top:32px;">
+      <div class="grid2 claim">
         <figure class="fig-sm">
           <img src="static/images/disclosure_curve.png" alt="Cumulative share of disclosed fields per turn">
           <figcaption>Cumulative share of disclosed case fields per turn.</figcaption>
         </figure>
-        <div class="abstract" style="align-self:center;">
-          <p>
-            PWP stays closest to the recorded patients on answer length and lexical diversity and is the only simulator
-            that does not over-produce clinical jargon. It follows the disclosure pacing of the real patients, while
-            PatientSim and AgentClinic front-load the case. The same holds on ACI-Bench, a broader cohort across specialties
-            (77% female, ages 22&ndash;100).
-          </p>
+        <div>
+          <h3>Real disclosure pacing</h3>
+          <p>PWP follows how real patients reveal information over the conversation; prior simulators front-load the case.</p>
         </div>
       </div>
 
-      <div class="grid2" style="margin-top:52px;">
-        <div class="abstract" style="align-self:center;">
-          <p>
-            Each HEXACO axis set to its extreme is recovered from the conversation by clinicians and by an LLM judge, closer
-            to the configured level than the matching PatientSim persona. An independent judge (Claude Sonnet 5.5) agrees
-            with the primary one (Spearman 0.91). Holding the case fixed, the seven PWP personas land further apart than
-            PatientSim&rsquo;s on 25 of 30 cases, because the latent state is generated per encounter rather than taken from
-            a fixed template.
-          </p>
+      <div class="grid2 claim">
+        <div>
+          <h3>Recoverable, diverse personalities</h3>
+          <p>Clinicians and LLM judges recover the configured traits, and PWP personas span a wider behavioral range than PatientSim on 25 of 30 cases.</p>
         </div>
         <figure class="fig-sm">
           <img src="static/images/persona_spread.png" alt="Persona spread per case, PWP versus PatientSim">
-          <figcaption>Mean pairwise embedding distance between the seven personas of each case.</figcaption>
+          <figcaption>Spread between the seven personas of each case.</figcaption>
         </figure>
       </div>
-    </div>
-  </section>
 
-  <section>
-    <div class="container">
-      <h2>Downstream: Contextual-Care Benchmark</h2>
-      <div class="abstract">
-        <p>
-          Many clinical problems have a non-medical cause: a patient&rsquo;s diabetes is uncontrolled because they dislike
-          pricking their finger. A plan that ignores it is a <em>contextual error</em>, medically correct but failing for this
-          patient. The VHA encounters come with expert annotations of these causes. For 92 cases (206 coded causes), a doctor
-          LLM interviews the simulated patient and states the cause and a plan for each problem. As reference, the same LLM
-          reasons over the transcript of the real visit.
-        </p>
-      </div>
-      <figure style="margin-top:32px;">
-        <img src="static/images/contextual_care_benchmark.png" alt="Contextual error and cause identification per doctor model">
-        <figcaption>Contextual error rate and cause identification per doctor model, with 95% case-bootstrap intervals.</figcaption>
-      </figure>
-      <div class="numbers">
-        <div class="number"><b>0.08</b><span>mean distance of PWP to the real error rate</span></div>
-        <div class="number"><b>0.19</b><span>for PatientSim and AgentClinic</span></div>
-        <div class="number"><b>0.22 vs 0.23</b><span>best-to-weakest model gap, PWP vs real visit (baselines 0.11&ndash;0.13)</span></div>
-      </div>
-      <div class="abstract" style="margin-top:24px;">
-        <p>
-          PatientSim and AgentClinic volunteer the cause, so every model makes significantly fewer contextual errors than on
-          the real visit and the differences between models shrink towards the ceiling. PWP comes closest to the real visit,
-          matching its error rate for Claude Sonnet 5.5, and keeps the gap between models intact. For both Gemini doctors
-          PWP is still easier than the real visit (0.33 vs 0.45 and 0.23 vs 0.34). Making the persona withholding
-          (H = C = 3) or emotional with a strong prior belief (E = O = 3) raises the difficulty further, through different
-          mechanisms.
-        </p>
-      </div>
-    </div>
-  </section>
-
-  <section id="demo">
-    <div class="container">
-      <h2>Live Demo</h2>
-      <div class="abstract" style="margin-bottom:24px;">
-        <p>
-          Pick a case, set the six HEXACO sliders, and take a history from a PWP patient. The demo runs Gemini 3.1
-          Flash-Lite and scales to zero when idle, so the first visit may take a few seconds to wake up.
-        </p>
-      </div>
-      <div class="buttons">
-        <a class="btn accent" href="https://patient-simulator-demo-4os25b5fpq-ew.a.run.app/" target="_blank" rel="noopener"><i class="fas fa-comments"></i> Open the live demo</a>
-      </div>
-      <p class="demo-note">
-        Conversations are limited per session and day and are logged for research. The cases are de-identified vignettes;
-        the simulator is a research prototype and gives no medical advice.
-      </p>
-    </div>
-  </section>
-
-  <section>
-    <div class="container">
-      <h2>Outlook</h2>
-      <div class="abstract">
-        <p>
-          PWP turns patient simulation into a controllable component of clinical LLM benchmarks: its default configuration
-          matches the difficulty of real patients, and its personality axes make the same case harder in targeted ways,
-          surfacing failure modes that uniformly cooperative simulators hide.
-        </p>
-        <p style="margin-top:16px;">
-          Next, we are matching the simulated population to the distribution of real patient personalities, moving beyond an
-          ordinal mapping of the HEXACO axes, and extending the simulation beyond text towards the full patient encounter.
-        </p>
+      <div class="claim">
+        <h3>Realistic benchmark difficulty</h3>
+        <p>On a contextual-care benchmark, PWP comes closest to the error rate of the real visit; prior simulators volunteer the answer and make the task too easy.</p>
+        <figure style="margin-top:24px;">
+          <img src="static/images/contextual_care_benchmark.png" alt="Contextual error and cause identification per doctor model">
+          <figcaption>Contextual error rate and cause identification per doctor model.</figcaption>
+        </figure>
       </div>
     </div>
   </section>
@@ -607,6 +478,11 @@
   </section>
 
   <script>
+    (function () {
+      var box = document.querySelector('.demo-frame');
+      box.querySelector('iframe').addEventListener('load', function () { box.classList.add('loaded'); });
+    })();
+
     (function () {
       var el = document.querySelector('.chat-compare');
       if (!el) return;
